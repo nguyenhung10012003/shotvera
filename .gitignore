@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.tsbuildinfo
+src-tauri/target/
+src-tauri/gen/
+.tmp/
+.DS_Store
+
+# Raw dumps extracted from the third-party app during reverse engineering (7 MB).
+# The clean-room spec re-analysis/ISCREEN_SHOTER_ANALYSIS.md is tracked instead.
+re-analysis/evidence/
+*.log

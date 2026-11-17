@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Shotvera",
+  "version": "0.1.0",
+  "identifier": "app.shotvera.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data: blob:; connect-src 'self' ipc: http://ipc.localhost https://api.anthropic.com; font-src 'self' data:",
+      "devCsp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$APPDATA/history/**"
+        ]
+      }
+    },
+    "macOSPrivateApi": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Utility",
+    "shortDescription": "Capture, annotate, and ask AI about anything on your screen",
+    "longDescription": "Shotvera is a fast, cross-platform screenshot tool. Select a region or window, mark it up with arrows, shapes, text, steps and blur, then copy, save or pin it. A built-in Claude assistant explains what is on screen, extracts and translates text, redacts sensitive details and draws annotations for you.",
+    "copyright": "Copyright 2026 The Shotvera Authors",
+    "license": "Apache-2.0",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "macOS": {
+      "minimumSystemVersion": "11.0"
+    }
+  }
+}
