@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Camera, Copy, FolderOpen, ImagePlay, Play, Power, ScanText, Settings, Sparkles, Trash, Video } from "lucide-react";
+import { ArrowDownCircle, Camera, Copy, FolderOpen, ImagePlay, Play, Power, ScanText, Settings, Sparkles, Trash, Video } from "lucide-react";
 import {
   appVersion,
   copyHistoryItem,
@@ -7,6 +7,7 @@ import {
   fitWindowHeight,
   hideCurrentWindow,
   historyImageUrl,
+  installUpdate,
   isTauri,
   listHistory,
   loadSettings,
@@ -22,6 +23,7 @@ import {
 } from "../lib/platform";
 import { getLocale, useI18n, useT } from "../i18n";
 import { formatDuration } from "../lib/duration";
+import { updateLabel, useUpdateStatus } from "../lib/updates";
 import { prettyShortcut } from "../settings/SettingsApp";
 import "./home.css";
 
@@ -71,6 +73,12 @@ export function HomeApp() {
   const [flash, setFlash] = useState<string | null>(null);
   const t = useT();
   const locale = useI18n((s) => s.locale);
+  const update = useUpdateStatus();
+  const showUpdate =
+    update.state === "available" ||
+    update.state === "downloading" ||
+    update.state === "installing" ||
+    (update.state === "error" && !!update.version);
 
   const refresh = useCallback(async () => {
     const list = await listHistory();
@@ -101,7 +109,7 @@ export function HomeApp() {
   useLayoutEffect(() => {
     const el = root.current;
     if (el) void fitWindowHeight(Math.ceil(el.getBoundingClientRect().height));
-  }, [items, shortcut, version, locale]);
+  }, [items, shortcut, version, locale, showUpdate]);
 
   const notify = (text: string) => {
     setFlash(text);
@@ -130,6 +138,19 @@ export function HomeApp() {
           </button>
         </div>
       </header>
+
+      {showUpdate && (
+        <div className={`update-banner ${update.state}`}>
+          <ArrowDownCircle size={16} />
+          <span>{updateLabel(t, update)}</span>
+          {(update.state === "available" || update.state === "error") && (
+            <button onClick={() => void installUpdate().catch(() => undefined)}>{t("update.install")}</button>
+          )}
+          {update.state === "downloading" && (
+            <i className="update-progress" style={{ width: `${Math.round((update.progress ?? 0) * 100)}%` }} />
+          )}
+        </div>
+      )}
 
       <button className="hero" onClick={() => capture("image")}>
         <span className="hero-icon">

@@ -5,6 +5,7 @@ mod platform;
 mod recording;
 mod secrets;
 mod settings;
+mod updater;
 mod windows;
 
 use std::collections::HashMap;
@@ -43,6 +44,9 @@ pub struct AppState {
     /// The tray menu's record item: "Stop Recording" while recording.
     pub record_menu_item: Mutex<Option<MenuItem<Wry>>>,
     pub recorder: recording::Recorder,
+    pub updates: updater::Updates,
+    /// The tray menu's update item: "Check for Updates…" or "Install Update x.y.z…".
+    pub update_menu_item: Mutex<Option<MenuItem<Wry>>>,
 }
 
 /// The two global shortcuts.
@@ -123,6 +127,28 @@ fn start_mode(app: &AppHandle, mode: CaptureMode) {
     match mode {
         CaptureMode::Record | CaptureMode::Gif => recording::toggle(app, mode),
         _ => capture::trigger_after_ui_hides(app, mode),
+    }
+}
+
+/// Shows "Install Update x.y.z…" in the tray menu when an update is waiting.
+pub fn set_tray_update(app: &AppHandle, version: Option<&str>) {
+    let text = update_menu_text(app, i18n::current(app), version);
+    if let Some(item) = app
+        .state::<AppState>()
+        .update_menu_item
+        .lock()
+        .ok()
+        .and_then(|i| i.clone())
+    {
+        let _ = item.set_text(text);
+    }
+}
+
+fn update_menu_text(app: &AppHandle, lang: Lang, version: Option<&str>) -> String {
+    let _ = app;
+    match version {
+        Some(v) => Text::MenuInstallUpdate.get(lang).replace("{version}", v),
+        None => Text::MenuCheckUpdates.get(lang).to_string(),
     }
 }
 
@@ -214,6 +240,14 @@ fn build_menu(app: &AppHandle, lang: Lang) -> tauri::Result<Menu<Wry>> {
     let home = item("home", Text::MenuRecent, None)?;
     let folder = item("folder", Text::MenuOpenFolder, None)?;
     let settings = item("settings", Text::MenuSettings, Some("CmdOrCtrl+,"))?;
+    let pending = updater::pending_version(app);
+    let updates = MenuItem::with_id(
+        app,
+        "updates",
+        update_menu_text(app, lang, pending.as_deref()),
+        true,
+        None::<&str>,
+    )?;
     let quit = item("quit", Text::MenuQuit, Some("CmdOrCtrl+Q"))?;
     let menu = Menu::with_items(
         app,
@@ -228,6 +262,7 @@ fn build_menu(app: &AppHandle, lang: Lang) -> tauri::Result<Menu<Wry>> {
             &home,
             &folder,
             &settings,
+            &updates,
             &PredefinedMenuItem::separator(app)?,
             &quit,
         ],
@@ -238,6 +273,9 @@ fn build_menu(app: &AppHandle, lang: Lang) -> tauri::Result<Menu<Wry>> {
     }
     if let Ok(mut slot) = state.record_menu_item.lock() {
         *slot = Some(record);
+    }
+    if let Ok(mut slot) = state.update_menu_item.lock() {
+        *slot = Some(updates);
     }
     Ok(menu)
 }
@@ -263,6 +301,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
                 }
             }
             "settings" => windows::show_settings(app),
+            "updates" => updater::check_or_install_from_tray(app),
             "quit" => app.exit(0),
             _ => {}
         })
@@ -331,6 +370,7 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState::default())
         .setup(|app| {
             // Menu-bar / tray app: no Dock icon on macOS.
@@ -349,6 +389,8 @@ pub fn run() {
                 saved,
                 settings::DEFAULT_RECORD_SHORTCUT,
             );
+
+            updater::start_background(&handle);
 
             // Create the overlay webviews up front so the first capture opens instantly.
             capture::warm_up(&handle);
@@ -406,6 +448,9 @@ pub fn run() {
             recording::resume_recording,
             recording::recording_status,
             output::open_recording,
+            updater::update_status,
+            updater::check_for_updates,
+            updater::install_update,
             output::reveal_recording,
             quit_app,
         ])

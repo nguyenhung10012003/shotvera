@@ -387,6 +387,44 @@ export async function onRecordingState(cb: (status: RecordingStatus) => void): P
   return listen<RecordingStatus>("recording://state", (e) => cb(e.payload));
 }
 
+// ---------------------------------------------------------------------------------------------
+// Updates
+// ---------------------------------------------------------------------------------------------
+
+export interface UpdateStatus {
+  state: "idle" | "checking" | "upToDate" | "available" | "downloading" | "installing" | "error";
+  currentVersion: string;
+  /** The version offered by the update, when there is one. */
+  version: string | null;
+  notes: string | null;
+  /** 0..1 while downloading, when the size is known. */
+  progress: number | null;
+  error: string | null;
+}
+
+export async function updateStatus(): Promise<UpdateStatus> {
+  if (!isTauri) {
+    return { state: "upToDate", currentVersion: "dev", version: null, notes: null, progress: null, error: null };
+  }
+  return invoke<UpdateStatus>("update_status");
+}
+
+/** Checks now. Resolves with the new version, or null when up to date. */
+export async function checkForUpdates(): Promise<string | null> {
+  if (!isTauri) return null;
+  return invoke<string | null>("check_for_updates");
+}
+
+/** Downloads and installs the update, then restarts the app. */
+export async function installUpdate(): Promise<void> {
+  if (isTauri) await invoke("install_update");
+}
+
+export async function onUpdateStatus(cb: (status: UpdateStatus) => void): Promise<UnlistenFn> {
+  if (!isTauri) return () => {};
+  return listen<UpdateStatus>("update://state", (e) => cb(e.payload));
+}
+
 /** Microphone recording is only implemented by the native macOS recorder. */
 export const canRecordAudio = navigator.platform.toLowerCase().includes("mac");
 

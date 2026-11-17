@@ -90,6 +90,53 @@ html[data-view="home"] body {
   color: var(--fg);
 }
 
+.update-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px 9px 12px;
+  border-radius: 11px;
+  overflow: hidden;
+  background: rgba(48, 209, 88, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(48, 209, 88, 0.3);
+  font-size: 12.5px;
+}
+.update-banner svg {
+  flex: none;
+  color: #30d158;
+}
+.update-banner span {
+  flex: 1;
+  min-width: 0;
+}
+.update-banner.error {
+  background: rgba(255, 92, 85, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 92, 85, 0.3);
+}
+.update-banner button {
+  flex: none;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: #30d158;
+  color: #062b10;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.update-banner button:hover {
+  filter: brightness(1.08);
+}
+.update-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  background: #30d158;
+  transition: width 0.2s ease;
+}
+
 .hero {
   display: flex;
   align-items: center;

@@ -27,6 +27,10 @@ export interface Settings {
   recordShowClicks: boolean;
   /** Record Retina displays at full pixel density instead of one pixel per point. */
   recordFullResolution: boolean;
+  /** Check for updates in the background. */
+  updateAutoCheck: boolean;
+  /** Install updates without asking, when the app is idle. */
+  updateAutoInstall: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -44,6 +48,8 @@ export const DEFAULT_SETTINGS: Settings = {
   recordMicrophone: false,
   recordShowClicks: false,
   recordFullResolution: false,
+  updateAutoCheck: true,
+  updateAutoInstall: false,
 };
 
 export const AI_MODELS: { id: AiModel; label: string; hint: MessageKey }[] = [

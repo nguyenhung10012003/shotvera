@@ -54,9 +54,15 @@ This section describes how Shotvera is meant to behave. It should help you decid
   - copied images go to the system clipboard.
 - Shotvera has no telemetry, no analytics, no crash reporting and no servers of its own.
 
+### Updates
+
+- To look for updates, Shotvera downloads `latest.json` from the project's GitHub releases. This happens shortly after launch, then every 6 hours, unless it is turned off in Settings → About. The request carries no information about you or your captures.
+- Each update is signed with the project's private key. Shotvera verifies the signature against the public key built into the app, and refuses an update that does not match.
+- Updates are installed only after you click *Install*, unless you turned on automatic installation.
+
 ### AI features (optional)
 
-- Nothing goes to a network service until you use an AI feature: the chat, a quick action, or "Capture & ask AI" / "Extract text".
+- Apart from update checks, nothing goes to a network service until you use an AI feature: the chat, a quick action, or "Capture & ask AI" / "Extract text".
 - When you do, Shotvera sends to `https://api.anthropic.com`, and nowhere else:
   - the **selected region**, with your annotations drawn on it, scaled down so its longest edge is at most 1568 px;
   - a text list of the current annotations;
@@ -80,6 +86,7 @@ This section describes how Shotvera is meant to behave. It should help you decid
 - Path traversal, or reading, writing or deleting files outside the app's folders through IPC commands.
 - Script injection into a Shotvera webview, for example through AI responses (rendered as Markdown), window titles or file names.
 - Bypassing the Content Security Policy or the capability allowlist.
+- Getting Shotvera to install an update that is not signed with the project's key.
 
 ### Out of scope
 

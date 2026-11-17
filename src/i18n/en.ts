@@ -213,6 +213,23 @@ export const en = {
   "settings.recordInfo":
     "Recordings are saved to your save folder. To stop, press the shortcut again or click the red icon in the menu bar.",
   "settings.version": "Version {version}",
+  "settings.updates": "Updates",
+  "settings.updateAutoCheck": "Check for updates automatically",
+  "settings.updateAutoCheckHint": "Looks for a new version on GitHub a few times a day",
+  "settings.updateAutoInstall": "Install updates automatically",
+  "settings.updateAutoInstallHint": "Installs and restarts when you are not capturing or recording",
+  "settings.updateMacPermission":
+    "On macOS, you may need to allow Screen Recording again after an update, until Shotvera is signed by Apple.",
+
+  // updates (popover banner and settings)
+  "update.check": "Check for updates",
+  "update.checking": "Checking for updates…",
+  "update.upToDate": "Shotvera is up to date",
+  "update.available": "Shotvera {version} is available",
+  "update.install": "Update and restart",
+  "update.downloading": "Downloading update… {percent}%",
+  "update.installing": "Installing update…",
+  "update.error": "Update failed: {error}",
   "settings.tagline": "Capture, annotate, and ask AI about anything on your screen. Available for macOS, Windows and Linux.",
 } satisfies Record<string, string | Plural>;
 

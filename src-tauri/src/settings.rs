@@ -45,6 +45,16 @@ pub fn record_show_clicks(app: &AppHandle) -> bool {
     get::<bool>(app, "recordShowClicks").unwrap_or(false)
 }
 
+/// Check for updates in the background.
+pub fn update_auto_check(app: &AppHandle) -> bool {
+    get::<bool>(app, "updateAutoCheck").unwrap_or(true)
+}
+
+/// Install updates without asking, when the app is idle.
+pub fn update_auto_install(app: &AppHandle) -> bool {
+    get::<bool>(app, "updateAutoInstall").unwrap_or(false)
+}
+
 pub fn save_dir(app: &AppHandle) -> PathBuf {
     get::<Option<String>>(app, "saveDir")
         .flatten()

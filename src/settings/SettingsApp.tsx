@@ -7,6 +7,8 @@ import {
   applyLanguage,
   applyRecordShortcut,
   canRecordAudio,
+  checkForUpdates,
+  installUpdate,
   getApiKey,
   isTauri,
   loadSettings,
@@ -15,6 +17,7 @@ import {
   setApiKey,
 } from "../lib/platform";
 import { AI_MODELS, DEFAULT_SETTINGS, type Settings } from "../lib/settings";
+import { updateLabel, useUpdateStatus } from "../lib/updates";
 
 type Tab = "general" | "shortcuts" | "recording" | "ai" | "about";
 
@@ -58,7 +61,7 @@ export function SettingsApp() {
         {tab === "shortcuts" && <Shortcuts settings={settings} update={update} />}
         {tab === "recording" && <RecordingSettings settings={settings} update={update} />}
         {tab === "ai" && <AiSettings settings={settings} update={update} />}
-        {tab === "about" && <About />}
+        {tab === "about" && <About settings={settings} update={update} />}
       </main>
     </div>
   );
@@ -392,20 +395,46 @@ function AiSettings({ settings, update }: SectionProps) {
   );
 }
 
-function About() {
+function About({ settings, update }: SectionProps) {
   const t = useT();
   const [version, setVersion] = useState("");
+  const status = useUpdateStatus();
+  const busy = status.state === "checking" || status.state === "downloading" || status.state === "installing";
 
   useEffect(() => {
     void appVersion().then(setVersion);
   }, []);
 
   return (
-    <div className="about">
-      <div className="about-logo">S</div>
-      <h2>Shotvera</h2>
-      <p>{version ? t("settings.version", { version }) : " "}</p>
-      <p className="hint">{t("settings.tagline")}</p>
-    </div>
+    <>
+      <div className="about">
+        <div className="about-logo">S</div>
+        <h2>Shotvera</h2>
+        <p>{version ? t("settings.version", { version }) : " "}</p>
+        <p className="hint">{t("settings.tagline")}</p>
+      </div>
+      <h3>{t("settings.updates")}</h3>
+      <div className="update-row">
+        <span className={status.state === "error" ? "error" : status.state === "available" ? "ok" : "muted"}>
+          {updateLabel(t, status)}
+        </span>
+        {status.state === "available" ? (
+          <button className="btn primary" onClick={() => void installUpdate().catch(() => undefined)}>
+            {t("update.install")}
+          </button>
+        ) : (
+          <button className="btn" disabled={busy} onClick={() => void checkForUpdates().catch(() => undefined)}>
+            {t("update.check")}
+          </button>
+        )}
+      </div>
+      <Row label={t("settings.updateAutoCheck")} hint={t("settings.updateAutoCheckHint")}>
+        <Toggle on={settings.updateAutoCheck} onChange={(v) => void update({ updateAutoCheck: v })} />
+      </Row>
+      <Row label={t("settings.updateAutoInstall")} hint={t("settings.updateAutoInstallHint")}>
+        <Toggle on={settings.updateAutoInstall} onChange={(v) => void update({ updateAutoInstall: v })} />
+      </Row>
+      {IS_MAC && <p className="hint">{t("settings.updateMacPermission")}</p>}
+    </>
   );
 }

@@ -206,5 +206,22 @@ export const vi: Messages = {
   "settings.recordInfo":
     "Bản quay được lưu vào thư mục lưu ảnh. Để dừng, nhấn lại phím tắt hoặc bấm icon đỏ trên thanh menu.",
   "settings.version": "Phiên bản {version}",
+  "settings.updates": "Cập nhật",
+  "settings.updateAutoCheck": "Tự động kiểm tra cập nhật",
+  "settings.updateAutoCheckHint": "Tìm phiên bản mới trên GitHub vài lần mỗi ngày",
+  "settings.updateAutoInstall": "Tự động cài bản cập nhật",
+  "settings.updateAutoInstallHint": "Cài đặt và khởi động lại khi bạn không đang chụp hay quay",
+  "settings.updateMacPermission":
+    "Trên macOS, có thể bạn phải cấp lại quyền Ghi màn hình sau mỗi lần cập nhật, cho tới khi Shotvera được Apple ký.",
+
+  // updates (popover banner and settings)
+  "update.check": "Kiểm tra cập nhật",
+  "update.checking": "Đang kiểm tra cập nhật…",
+  "update.upToDate": "Shotvera đang là bản mới nhất",
+  "update.available": "Đã có Shotvera {version}",
+  "update.install": "Cập nhật & khởi động lại",
+  "update.downloading": "Đang tải bản cập nhật… {percent}%",
+  "update.installing": "Đang cài bản cập nhật…",
+  "update.error": "Cập nhật thất bại: {error}",
   "settings.tagline": "Chụp màn hình, chú thích và hỏi AI về mọi thứ trên màn hình. Có cho macOS, Windows và Linux.",
 };

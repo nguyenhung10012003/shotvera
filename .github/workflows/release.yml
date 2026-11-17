@@ -149,20 +149,91 @@ jobs:
             echo "No signing certificate configured: ad-hoc signing."
           fi
 
+      - name: Sign update artifacts, if the signing key is configured
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          # The signed .sig files let installed apps update themselves (see latest.json below).
+          if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "UPDATER_ARGS=--config src-tauri/tauri.ci.conf.json" >> "$GITHUB_ENV"
+          else
+            echo "::warning::TAURI_SIGNING_PRIVATE_KEY is not set: this release will not offer in-app updates."
+          fi
+
       - name: Build and upload to the release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
-          args: ${{ matrix.args }}
+          args: ${{ matrix.args }} ${{ env.UPDATER_ARGS }}
+          # latest.json is written once by the publish job, from every platform's signature.
+          includeUpdaterJson: false
 
   publish-release:
     name: Publish release
     needs: [create-release, build]
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_ID: ${{ needs.create-release.outputs.release_id }}
     steps:
+      - name: Write latest.json for the in-app updater
+        run: |
+          repo="$GITHUB_REPOSITORY"
+          assets=$(gh api "repos/$repo/releases/$RELEASE_ID/assets" --paginate | jq -s 'add')
+          base="https://github.com/$repo/releases/download/$TAG"
+
+          find_asset() { jq -r --arg re "$1" '[.[] | select(.name | test($re))][0].name // empty' <<<"$assets"; }
+          signature() {
+            local id
+            id=$(jq -r --arg n "$1.sig" '.[] | select(.name == $n) | .id' <<<"$assets")
+            [ -n "$id" ] && gh api -H "Accept: application/octet-stream" "repos/$repo/releases/assets/$id"
+          }
+          platforms='{}'
+          add() { # add <updater target> <asset name>
+            [ -n "$2" ] || return 0
+            local sig
+            sig=$(signature "$2") || return 0
+            [ -n "$sig" ] || return 0
+            platforms=$(jq --arg k "$1" --arg url "$base/$2" --arg sig "$sig" '. + {($k): {url: $url, signature: $sig}}' <<<"$platforms")
+          }
+
+          mac_arm=$(find_asset '_aarch64\.app\.tar\.gz$')
+          mac_x64=$(find_asset '_x64\.app\.tar\.gz$')
+          nsis=$(find_asset '-setup\.exe$')
+          msi=$(find_asset '\.msi$')
+          appimage=$(find_asset '\.AppImage$')
+          deb=$(find_asset '\.deb$')
+          rpm=$(find_asset '\.rpm$')
+          # The updater looks for "<os>-<arch>-<installer>" first, then "<os>-<arch>".
+          add darwin-aarch64 "$mac_arm";   add darwin-aarch64-app "$mac_arm"
+          add darwin-x86_64 "$mac_x64";    add darwin-x86_64-app "$mac_x64"
+          add windows-x86_64 "$nsis";      add windows-x86_64-nsis "$nsis"
+          add windows-x86_64-msi "$msi"
+          add linux-x86_64 "$appimage";    add linux-x86_64-appimage "$appimage"
+          add linux-x86_64-deb "$deb";     add linux-x86_64-rpm "$rpm"
+
+          if [ "$platforms" = '{}' ]; then
+            echo "::warning::No update signatures found; installed apps will not be offered this release."
+            exit 0
+          fi
+          jq -n --arg version "${TAG#v}" \
+            --arg notes "https://github.com/$repo/releases/tag/$TAG" \
+            --arg date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --argjson platforms "$platforms" \
+            '{version: $version, notes: $notes, pub_date: $date, platforms: $platforms}' > latest.json
+          jq -r '.platforms | keys | join(", ")' latest.json
+
+          # On a re-run, replace the previous latest.json.
+          old=$(jq -r '.[] | select(.name == "latest.json") | .id' <<<"$assets")
+          [ -z "$old" ] || gh api -X DELETE "repos/$repo/releases/assets/$old"
+          curl -fsS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/json" \
+            --data-binary @latest.json \
+            "https://uploads.github.com/repos/$repo/releases/$RELEASE_ID/assets?name=latest.json" > /dev/null
+
       - name: Publish the draft
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/${{ needs.create-release.outputs.release_id }}" -F draft=false --silent
+        run: gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" -F draft=false --silent

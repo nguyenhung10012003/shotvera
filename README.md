@@ -93,6 +93,11 @@ The [release notes](https://github.com/nguyenhung10012003/shotvera/releases/late
 - A one-click popover offers capture, *Capture & ask AI*, *Extract text* and your recent captures.
 - Click a recent capture to pin it. Hover over it to copy or delete it.
 - Settings: global shortcut, launch at login, save folder, image format.
+
+**Updates**
+- Shotvera checks GitHub for a new version shortly after launch and every 6 hours. When one is found, it shows a notification, a banner in the popover and an *Install Update* item in the menu. One click installs it and restarts the app.
+- You can check manually from the menu or Settings → About, turn automatic checks off, or let Shotvera install updates by itself when you are not capturing or recording.
+- Every update is signed. Shotvera refuses to install a file whose signature does not match the key built into the app.
 - Available in English (default) and Vietnamese. Switch in Settings → General → Language; every window updates immediately.
 
 ## Getting started
@@ -145,7 +150,8 @@ shotvera --record=gif     # pick an area and record a GIF
 
 - Captures and recordings are saved only where you choose. The 60 most recent are also listed in *Recent*.
 - The microphone is used only when you turn on sound for a recording. The sound goes into the video file and nowhere else.
-- Shotvera connects only to `api.anthropic.com`, and only when you use an AI feature. It then sends your chat messages and the selected region, scaled down to at most 1568 px on its longest edge.
+- Shotvera connects to `api.anthropic.com` only when you use an AI feature. It then sends your chat messages and the selected region, scaled down to at most 1568 px on its longest edge.
+- To look for updates, Shotvera downloads a small `latest.json` file from this repository's GitHub releases. It sends nothing about you or your captures. You can turn this off in Settings → About.
 - There is no telemetry, analytics or crash reporting.
 
 See [SECURITY.md](SECURITY.md) for the full security model and how to report a vulnerability.
@@ -249,6 +255,15 @@ Pre-release versions must use numeric identifiers, such as `1.0.0-1`, because th
 - `APPLE_TEAM_ID`.
 
 Without them, builds are ad-hoc signed.
+
+**In-app updates.** Releases are signed so that installed apps can update themselves. The public key is in `src-tauri/tauri.conf.json` (`plugins.updater.pubkey`). The private key must be stored as two repository secrets:
+
+- `TAURI_SIGNING_PRIVATE_KEY`: the contents of the private key file;
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: its password.
+
+With these secrets set, the release workflow signs the macOS `.app.tar.gz`, the Windows installers and the Linux packages. It then publishes `latest.json`, which installed apps read from `releases/latest/download/latest.json`. Without the secrets, releases still build but do not offer in-app updates.
+
+Keep a backup of the private key. If it is lost, existing installs cannot verify new versions and users must reinstall by hand. To try an update locally, point a build at your own server with `SHOTVERA_UPDATE_ENDPOINT=http://127.0.0.1:8765/latest.json`. Signatures are still checked.
 
 ## Roadmap
 
