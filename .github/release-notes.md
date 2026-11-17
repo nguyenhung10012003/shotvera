@@ -5,9 +5,11 @@
 | macOS, Apple Silicon (M1 and later) | `Shotvera_{{version}}_aarch64.dmg` |
 | macOS, Intel | `Shotvera_{{version}}_x64.dmg` |
 | Windows 10 / 11, 64-bit | `Shotvera_{{version}}_x64-setup.exe` (recommended) or `Shotvera_{{version}}_x64_en-US.msi` |
-| Linux, any distribution | `Shotvera_{{version}}_amd64.AppImage` |
+| Linux (portable) | `Shotvera_{{version}}_amd64.AppImage` |
 | Debian / Ubuntu | `Shotvera_{{version}}_amd64.deb` |
 | Fedora / openSUSE | `Shotvera-{{version}}-1.x86_64.rpm` |
+
+The Linux packages need glibc 2.39 or newer: Ubuntu 24.04, Debian 13, Fedora 40, or later.
 
 ### First launch
 
