@@ -16,6 +16,17 @@ export interface Settings {
   closeAfterCopy: boolean;
   aiModel: AiModel;
   aiEffort: AiEffort;
+  /** Global shortcut that opens the record overlay, or stops the running recording. */
+  recordShortcut: string;
+  /** Format preselected in the record bar. */
+  recordFormat: "mp4" | "gif";
+  recordFps: 30 | 60;
+  /** Record sound from the microphone (macOS). */
+  recordMicrophone: boolean;
+  /** Highlight mouse clicks in recordings (macOS). */
+  recordShowClicks: boolean;
+  /** Record Retina displays at full pixel density instead of one pixel per point. */
+  recordFullResolution: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -27,6 +38,12 @@ export const DEFAULT_SETTINGS: Settings = {
   closeAfterCopy: true,
   aiModel: "claude-opus-5-5",
   aiEffort: "medium",
+  recordShortcut: "CommandOrControl+Shift+6",
+  recordFormat: "mp4",
+  recordFps: 30,
+  recordMicrophone: false,
+  recordShowClicks: false,
+  recordFullResolution: false,
 };
 
 export const AI_MODELS: { id: AiModel; label: string; hint: MessageKey }[] = [

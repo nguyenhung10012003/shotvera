@@ -7,6 +7,7 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_store::StoreExt;
 
 pub const DEFAULT_SHORTCUT: &str = "CommandOrControl+Shift+2";
+pub const DEFAULT_RECORD_SHORTCUT: &str = "CommandOrControl+Shift+6";
 
 fn get<T: DeserializeOwned>(app: &AppHandle, key: &str) -> Option<T> {
     let store = app.store("settings.json").ok()?;
@@ -20,6 +21,28 @@ pub fn language(app: &AppHandle) -> String {
 
 pub fn capture_shortcut(app: &AppHandle) -> String {
     get::<String>(app, "captureShortcut").unwrap_or_else(|| DEFAULT_SHORTCUT.to_string())
+}
+
+pub fn record_shortcut(app: &AppHandle) -> String {
+    get::<String>(app, "recordShortcut").unwrap_or_else(|| DEFAULT_RECORD_SHORTCUT.to_string())
+}
+
+/// Video frame rate: 30 or 60.
+pub fn record_fps(app: &AppHandle) -> u32 {
+    match get::<u32>(app, "recordFps") {
+        Some(60) => 60,
+        _ => 30,
+    }
+}
+
+/// Record Retina displays at full pixel density (larger files).
+pub fn record_full_resolution(app: &AppHandle) -> bool {
+    get::<bool>(app, "recordFullResolution").unwrap_or(false)
+}
+
+/// Highlight mouse clicks in recordings (macOS).
+pub fn record_show_clicks(app: &AppHandle) -> bool {
+    get::<bool>(app, "recordShowClicks").unwrap_or(false)
 }
 
 pub fn save_dir(app: &AppHandle) -> PathBuf {

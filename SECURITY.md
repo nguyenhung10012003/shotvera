@@ -42,12 +42,14 @@ This section describes how Shotvera is meant to behave. It should help you decid
 
 ### Screen content
 
-- Shotvera takes a screenshot only when you start a capture:
-  - with the global shortcut;
+- Shotvera takes a screenshot or records the screen only when you start it:
+  - with a global shortcut;
   - from the menu bar or tray;
-  - with the `--capture` command-line flag.
+  - with the `--capture` or `--record` command-line flag.
+- While a recording runs, a border marks the recorded area and the menu bar icon is red.
+- The microphone is used only for recordings where you turned sound on. The sound is written into the video file.
 - Captures stay on your device:
-  - images you save go to the folder you choose (`Pictures/Shotvera` by default);
+  - images and recordings you save go to the folder you choose (`Pictures/Shotvera` by default);
   - the app's data folder keeps your 60 most recent captures for the "Recent" list;
   - copied images go to the system clipboard.
 - Shotvera has no telemetry, no analytics, no crash reporting and no servers of its own.

@@ -55,6 +55,19 @@ export const vi: Messages = {
   "toolbar.textBackground": "Có nền",
   "toolbar.brush": "Cọ",
   "toolbar.area": "Vùng",
+  "toolbar.record": "Quay video vùng này",
+
+  // record bar (overlay) and recording controls
+  "record.start": "Quay",
+  "record.startHint": "Bắt đầu quay (Enter)",
+  "record.micOn": "Đang bật micro",
+  "record.micOff": "Đang tắt micro",
+  "record.oneDisplay": "Chỉ quay phần nằm trên một màn hình",
+  "rec.pause": "Tạm dừng",
+  "rec.resume": "Tiếp tục",
+  "rec.stop": "Dừng và lưu",
+  "rec.discard": "Huỷ bản quay",
+  "rec.saving": "Đang lưu…",
 
   // AI panel
   "ai.intro": "Hỏi bất cứ điều gì về ảnh vừa chụp, hoặc nhờ AI chỉnh sửa ngay trên ảnh.",
@@ -120,12 +133,20 @@ export const vi: Messages = {
   "home.empty": "Ảnh bạn chụp sẽ hiện ở đây",
   "home.emptyHint": "Nhấn {shortcut} để bắt đầu",
   "home.pinHint": "Bấm để ghim lên màn hình",
+  "home.recordVideo": "Quay màn hình",
+  "home.recordVideoHint": "Video MP4 của vùng bất kỳ",
+  "home.recordGif": "Quay GIF",
+  "home.recordGifHint": "Đoạn ngắn chạy lặp lại",
+  "home.playHint": "Bấm để phát",
+  "home.showInFolder": "Hiện trong thư mục",
+  "home.removeFromRecent": "Xoá khỏi Gần đây",
 
   // settings window
   "settings.tab.general": "Chung",
   "settings.tab.shortcuts": "Phím tắt",
   "settings.tab.ai": "AI",
   "settings.tab.about": "Giới thiệu",
+  "settings.tab.recording": "Quay",
   "settings.language": "Ngôn ngữ",
   "settings.saveFolder": "Thư mục lưu ảnh",
   "settings.saveFolderHint": "Dùng cho Lưu nhanh ({shortcut})",
@@ -171,6 +192,19 @@ export const vi: Messages = {
   "settings.effort.high": "Kỹ",
   "settings.aiPrivacy":
     "Ảnh chụp chỉ được gửi tới Anthropic khi bạn mở khung AI và gửi câu hỏi. Shotvera không lưu ảnh hay hội thoại trên bất kỳ máy chủ nào khác.",
+  "settings.recordFormat": "Định dạng mặc định",
+  "settings.recordFps": "Tốc độ khung hình",
+  "settings.recordFpsHint": "Áp dụng cho MP4. GIF luôn quay ở 12 fps",
+  "settings.recordMicrophone": "Thu âm micro",
+  "settings.recordMicrophoneHint": "Thêm giọng nói của bạn vào video MP4",
+  "settings.recordClicks": "Làm nổi cú click",
+  "settings.recordClicksHint": "Hiện vòng tròn tại chỗ bạn click",
+  "settings.recordRetina": "Độ phân giải Retina đầy đủ",
+  "settings.recordRetinaHint": "Nét hơn khi phóng to, nhưng file lớn gấp khoảng 4 lần",
+  "settings.recordShortcut": "Quay màn hình",
+  "settings.recordShortcutHint": "Nhấn lần nữa để dừng quay",
+  "settings.recordInfo":
+    "Bản quay được lưu vào thư mục lưu ảnh. Để dừng, nhấn lại phím tắt hoặc bấm icon đỏ trên thanh menu.",
   "settings.version": "Phiên bản {version}",
   "settings.tagline": "Chụp màn hình, chú thích và hỏi AI về mọi thứ trên màn hình. Có cho macOS, Windows và Linux.",
 };

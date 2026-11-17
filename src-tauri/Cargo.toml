@@ -33,12 +33,27 @@ keyring = "4"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 log = "0.4"
 env_logger = { version = "0.11", default-features = false, features = ["auto-color", "humantime"] }
+# Screen recording: H.264 (built from source) + MP4 muxing, GIF, and fast frame scaling.
+openh264 = "0.9"
+mp4 = "0.14"
+gif = "0.14"
+fast_image_resize = "6"
+bytes = "1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_UI_Input_KeyboardAndMouse"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSResponder", "NSWindow"] }
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSResponder", "NSWindow", "NSApplication", "NSRunningApplication"] }
+# Native screen recording (AVFoundation: hardware H.264 + AAC microphone).
+objc2 = "0.6"
+block2 = "0.6"
+dispatch2 = "0.3"
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSURL", "NSError", "NSDictionary", "NSValue", "NSArray", "NSObject"] }
+objc2-av-foundation = { version = "0.3", default-features = false, features = ["std", "block2", "objc2-core-media", "objc2-core-graphics", "objc2-core-foundation", "AVCaptureSession", "AVCaptureInput", "AVCaptureOutputBase", "AVCaptureFileOutput", "AVCaptureVideoDataOutput", "AVCaptureDevice", "AVMediaFormat", "AVAsset", "AVAssetExportSession"] }
+objc2-core-media = { version = "0.3", default-features = false, features = ["std", "objc2-core-video", "CMSampleBuffer", "CMTime", "CMBase"] }
+objc2-core-video = { version = "0.3", default-features = false, features = ["std", "CVPixelBuffer", "CVImageBuffer", "CVBuffer", "CVReturn", "CVPixelFormatDescription", "CVBase"] }
+objc2-core-foundation = { version = "0.3", default-features = false, features = ["std", "CFCGTypes"] }
 
 # Image capture/encoding is far too slow unoptimized; optimize dependencies even in dev builds.
 [profile.dev.package."*"]

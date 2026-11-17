@@ -1,10 +1,12 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Info, Keyboard, Settings as Cog, Sparkles } from "lucide-react";
+import { Info, Keyboard, Settings as Cog, Sparkles, Video } from "lucide-react";
 import { LOCALES, setLocale, useT, type Locale, type MessageKey } from "../i18n";
 import {
   appVersion,
   applyCaptureShortcut,
   applyLanguage,
+  applyRecordShortcut,
+  canRecordAudio,
   getApiKey,
   isTauri,
   loadSettings,
@@ -14,7 +16,7 @@ import {
 } from "../lib/platform";
 import { AI_MODELS, DEFAULT_SETTINGS, type Settings } from "../lib/settings";
 
-type Tab = "general" | "shortcuts" | "ai" | "about";
+type Tab = "general" | "shortcuts" | "recording" | "ai" | "about";
 
 const IS_MAC = navigator.platform.toLowerCase().includes("mac");
 const MOD = IS_MAC ? "⌘" : "Ctrl+";
@@ -36,6 +38,7 @@ export function SettingsApp() {
   const tabs: { id: Tab; label: MessageKey; icon: ReactNode }[] = [
     { id: "general", label: "settings.tab.general", icon: <Cog size={16} /> },
     { id: "shortcuts", label: "settings.tab.shortcuts", icon: <Keyboard size={16} /> },
+    { id: "recording", label: "settings.tab.recording", icon: <Video size={16} /> },
     { id: "ai", label: "settings.tab.ai", icon: <Sparkles size={16} /> },
     { id: "about", label: "settings.tab.about", icon: <Info size={16} /> },
   ];
@@ -53,6 +56,7 @@ export function SettingsApp() {
       <main className="settings-body">
         {tab === "general" && <General settings={settings} update={update} />}
         {tab === "shortcuts" && <Shortcuts settings={settings} update={update} />}
+        {tab === "recording" && <RecordingSettings settings={settings} update={update} />}
         {tab === "ai" && <AiSettings settings={settings} update={update} />}
         {tab === "about" && <About />}
       </main>
@@ -182,7 +186,8 @@ export function prettyShortcut(acc: string): string {
     .join(IS_MAC ? "" : "+");
 }
 
-function Shortcuts({ settings, update }: SectionProps) {
+/** A button that records a new key combination and registers it with `apply`. */
+function ShortcutField({ value, apply, onSaved }: { value: string; apply(acc: string): Promise<void>; onSaved(acc: string): Promise<void> }) {
   const t = useT();
   const [recording, setRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -199,8 +204,8 @@ function Shortcuts({ settings, update }: SectionProps) {
       if (!acc) return;
       setRecording(false);
       try {
-        await applyCaptureShortcut(acc);
-        await update({ captureShortcut: acc });
+        await apply(acc);
+        await onSaved(acc);
         setError(null);
       } catch (err) {
         setError(t("settings.shortcutError", { error: String(err) }));
@@ -208,8 +213,20 @@ function Shortcuts({ settings, update }: SectionProps) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [recording, update, t]);
+  }, [recording, apply, onSaved, t]);
 
+  return (
+    <div className="shortcut-field">
+      <button className={`shortcut${recording ? " rec" : ""}`} onClick={() => setRecording(true)}>
+        {recording ? t("settings.pressKeys") : prettyShortcut(value)}
+      </button>
+      {error && <small className="error">{error}</small>}
+    </div>
+  );
+}
+
+function Shortcuts({ settings, update }: SectionProps) {
+  const t = useT();
   const doubleClick = t("settings.keys.doubleClick");
   const list: [MessageKey, string][] = [
     ["settings.keys.copyClose", IS_MAC ? `⌘C · ⌘↵ · ${doubleClick}` : `Ctrl+C · Ctrl+Enter · ${doubleClick}`],
@@ -227,11 +244,19 @@ function Shortcuts({ settings, update }: SectionProps) {
     <>
       <h2>{t("settings.tab.shortcuts")}</h2>
       <Row label={t("settings.captureShortcut")} hint={t("settings.captureShortcutHint")}>
-        <button className={`shortcut${recording ? " rec" : ""}`} onClick={() => setRecording(true)}>
-          {recording ? t("settings.pressKeys") : prettyShortcut(settings.captureShortcut)}
-        </button>
+        <ShortcutField
+          value={settings.captureShortcut}
+          apply={applyCaptureShortcut}
+          onSaved={(acc) => update({ captureShortcut: acc })}
+        />
       </Row>
-      {error && <p className="error">{error}</p>}
+      <Row label={t("settings.recordShortcut")} hint={t("settings.recordShortcutHint")}>
+        <ShortcutField
+          value={settings.recordShortcut}
+          apply={applyRecordShortcut}
+          onSaved={(acc) => update({ recordShortcut: acc })}
+        />
+      </Row>
       <p className="hint">{t("settings.shortcutHint")}</p>
       <h3>{t("settings.inCapture")}</h3>
       <table className="keys">
@@ -246,6 +271,47 @@ function Shortcuts({ settings, update }: SectionProps) {
           ))}
         </tbody>
       </table>
+    </>
+  );
+}
+
+function RecordingSettings({ settings, update }: SectionProps) {
+  const t = useT();
+  return (
+    <>
+      <h2>{t("settings.tab.recording")}</h2>
+      <Row label={t("settings.recordFormat")}>
+        <div className="seg">
+          {(["mp4", "gif"] as const).map((f) => (
+            <button key={f} className={settings.recordFormat === f ? "on" : ""} onClick={() => void update({ recordFormat: f })}>
+              {f.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </Row>
+      <Row label={t("settings.recordFps")} hint={t("settings.recordFpsHint")}>
+        <div className="seg">
+          {([30, 60] as const).map((fps) => (
+            <button key={fps} className={settings.recordFps === fps ? "on" : ""} onClick={() => void update({ recordFps: fps })}>
+              {fps} fps
+            </button>
+          ))}
+        </div>
+      </Row>
+      {canRecordAudio && (
+        <>
+          <Row label={t("settings.recordMicrophone")} hint={t("settings.recordMicrophoneHint")}>
+            <Toggle on={settings.recordMicrophone} onChange={(v) => void update({ recordMicrophone: v })} />
+          </Row>
+          <Row label={t("settings.recordClicks")} hint={t("settings.recordClicksHint")}>
+            <Toggle on={settings.recordShowClicks} onChange={(v) => void update({ recordShowClicks: v })} />
+          </Row>
+          <Row label={t("settings.recordRetina")} hint={t("settings.recordRetinaHint")}>
+            <Toggle on={settings.recordFullResolution} onChange={(v) => void update({ recordFullResolution: v })} />
+          </Row>
+        </>
+      )}
+      <p className="hint">{t("settings.recordInfo")}</p>
     </>
   );
 }

@@ -97,6 +97,8 @@ interface OverlayState {
   select(id: string | null): void;
   editText(id: string | null): void;
   setAiOpen(open: boolean): void;
+  /** Switches what the selection is for (for example from annotating to recording). */
+  setMode(mode: CaptureMode): void;
   showToast(text: string): void;
 }
 
@@ -275,6 +277,19 @@ export const useOverlay = create<OverlayState>((set, get) => ({
   editText: (editingTextId) => set({ editingTextId, selectedId: null }),
 
   setAiOpen: (aiOpen) => set({ aiOpen }),
+
+  setMode: (mode) =>
+    set((s) => {
+      if (!s.frame) return s;
+      const recording = mode === "record" || mode === "gif";
+      // Annotations are not part of a recording, so a record selection starts clean.
+      return {
+        frame: { ...s.frame, mode },
+        ...(recording
+          ? { annotations: [], past: [], future: [], selectedId: null, editingTextId: null, aiOpen: false, tool: "select" as const }
+          : {}),
+      };
+    }),
 
   showToast: (text) => {
     const id = Date.now();

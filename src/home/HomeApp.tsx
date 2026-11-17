@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Camera, Copy, FolderOpen, Power, ScanText, Settings, Sparkles, Trash } from "lucide-react";
+import { Camera, Copy, FolderOpen, ImagePlay, Play, Power, ScanText, Settings, Sparkles, Trash, Video } from "lucide-react";
 import {
   appVersion,
   copyHistoryItem,
@@ -10,15 +10,18 @@ import {
   isTauri,
   listHistory,
   loadSettings,
+  openRecording,
   openSaveFolder,
   openSettings,
   pinHistoryItem,
   quitApp,
+  revealRecording,
   startCapture,
   type CaptureMode,
   type HistoryItem,
 } from "../lib/platform";
 import { getLocale, useI18n, useT } from "../i18n";
+import { formatDuration } from "../lib/duration";
 import { prettyShortcut } from "../settings/SettingsApp";
 import "./home.css";
 
@@ -150,6 +153,16 @@ export function HomeApp() {
           <b>{t("home.extractText")}</b>
           <small>{t("home.extractTextHint")}</small>
         </button>
+        <button className="tile rec" onClick={() => capture("record")}>
+          <Video size={18} />
+          <b>{t("home.recordVideo")}</b>
+          <small>{t("home.recordVideoHint")}</small>
+        </button>
+        <button className="tile rec" onClick={() => capture("gif")}>
+          <ImagePlay size={18} />
+          <b>{t("home.recordGif")}</b>
+          <small>{t("home.recordGifHint")}</small>
+        </button>
       </div>
 
       <section className="recent">
@@ -168,32 +181,68 @@ export function HomeApp() {
           </div>
         ) : (
           <div className="grid">
-            {items.map((i) => (
-              <div key={i.path} className="shot" title={t("home.pinHint")} onClick={() => void pinHistoryItem(i.path)}>
-                <img src={i.url} alt="" draggable={false} />
-                <span className="shot-time">{timeAgo(i.createdMs)}</span>
-                <div className="shot-actions">
-                  <button
-                    title={t("common.copy")}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void copyHistoryItem(i.path).then(() => notify(t("common.copied")));
-                    }}
-                  >
-                    <Copy size={12} />
-                  </button>
-                  <button
-                    title={t("common.delete")}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void deleteHistory(i.path).then(refresh);
-                    }}
-                  >
-                    <Trash size={12} />
-                  </button>
+            {items.map((i) =>
+              i.video ? (
+                <div
+                  key={i.path}
+                  className="shot video"
+                  title={t("home.playHint")}
+                  onClick={() => void openRecording(i.path).catch((err) => notify(String(err)))}
+                >
+                  <img src={i.url} alt="" draggable={false} />
+                  <span className="shot-play">
+                    <Play size={9} fill="currentColor" />
+                    {i.video.toLowerCase().endsWith(".gif") ? "GIF" : formatDuration(i.durationMs ?? 0)}
+                  </span>
+                  <span className="shot-time">{timeAgo(i.createdMs)}</span>
+                  <div className="shot-actions">
+                    <button
+                      title={t("home.showInFolder")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void revealRecording(i.path).catch((err) => notify(String(err)));
+                      }}
+                    >
+                      <FolderOpen size={12} />
+                    </button>
+                    <button
+                      title={t("home.removeFromRecent")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void deleteHistory(i.path).then(refresh);
+                      }}
+                    >
+                      <Trash size={12} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ) : (
+                <div key={i.path} className="shot" title={t("home.pinHint")} onClick={() => void pinHistoryItem(i.path)}>
+                  <img src={i.url} alt="" draggable={false} />
+                  <span className="shot-time">{timeAgo(i.createdMs)}</span>
+                  <div className="shot-actions">
+                    <button
+                      title={t("common.copy")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void copyHistoryItem(i.path).then(() => notify(t("common.copied")));
+                      }}
+                    >
+                      <Copy size={12} />
+                    </button>
+                    <button
+                      title={t("common.delete")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void deleteHistory(i.path).then(refresh);
+                      }}
+                    >
+                      <Trash size={12} />
+                    </button>
+                  </div>
+                </div>
+              ),
+            )}
           </div>
         )}
       </section>

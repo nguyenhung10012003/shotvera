@@ -38,6 +38,9 @@ pub enum Text {
     MenuCapture,
     MenuCaptureAi,
     MenuCaptureOcr,
+    MenuRecord,
+    MenuRecordGif,
+    MenuStopRecording,
     MenuRecent,
     MenuOpenFolder,
     MenuSettings,
@@ -48,10 +51,15 @@ pub enum Text {
     CaptureFailed,
     NeedScreenPermission,
     NoDisplay,
+    RecordingSaved,
+    RecordingFailed,
+    MicUnavailable,
+    TrayRecording,
     /// Contains an `{error}` placeholder.
     ShortcutInvalid,
     /// Contains an `{error}` placeholder.
     ShortcutTaken,
+    ShortcutDuplicate,
 }
 
 impl Text {
@@ -61,6 +69,9 @@ impl Text {
             Text::MenuCapture => ("Capture Screen", "Chụp màn hình"),
             Text::MenuCaptureAi => ("Capture and Ask AI", "Chụp và hỏi AI"),
             Text::MenuCaptureOcr => ("Capture and Extract Text", "Chụp và trích xuất văn bản"),
+            Text::MenuRecord => ("Record Screen", "Quay màn hình"),
+            Text::MenuRecordGif => ("Record GIF", "Quay GIF"),
+            Text::MenuStopRecording => ("Stop Recording", "Dừng quay"),
             Text::MenuRecent => ("Recent Captures…", "Ảnh gần đây…"),
             Text::MenuOpenFolder => ("Open Captures Folder", "Mở thư mục ảnh"),
             Text::MenuSettings => ("Settings…", "Cài đặt…"),
@@ -74,7 +85,18 @@ impl Text {
                 "Hãy cho phép Shotvera ghi màn hình (Screen Recording) trong Cài đặt hệ thống, rồi mở lại ứng dụng.",
             ),
             Text::NoDisplay => ("No display found.", "Không tìm thấy màn hình nào."),
+            Text::RecordingSaved => ("Recording saved", "Đã lưu bản quay"),
+            Text::RecordingFailed => ("Couldn't record the screen", "Không quay được màn hình"),
+            Text::MicUnavailable => (
+                "Recorded without sound: Shotvera couldn't use the microphone.",
+                "Đã quay không có tiếng: Shotvera không dùng được micro.",
+            ),
+            Text::TrayRecording => ("Recording. Click to stop.", "Đang quay. Bấm để dừng."),
             Text::ShortcutInvalid => ("Invalid shortcut: {error}", "Phím tắt không hợp lệ: {error}"),
+            Text::ShortcutDuplicate => (
+                "Shotvera already uses this shortcut for another action",
+                "Shotvera đã dùng phím tắt này cho thao tác khác",
+            ),
             Text::ShortcutTaken => (
                 "Another app is already using this shortcut ({error})",
                 "Một ứng dụng khác đang dùng phím tắt này ({error})",

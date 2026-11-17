@@ -20,6 +20,7 @@ import {
   Trash,
   Type,
   Undo2,
+  Video,
   X,
 } from "lucide-react";
 import { useT } from "../i18n";
@@ -27,7 +28,7 @@ import { EMOJIS, PALETTE, TOOL_SHORTCUTS, type ToolId } from "../lib/annotations
 import { placeBelowOrAbove } from "../lib/geometry";
 import { useOverlay } from "./store";
 
-export type OverlayAction = "copy" | "quickSave" | "saveAs" | "pin" | "close" | "ai" | "ocr";
+export type OverlayAction = "copy" | "quickSave" | "saveAs" | "pin" | "close" | "ai" | "ocr" | "record";
 
 const MOD = navigator.platform.toLowerCase().includes("mac") ? "⌘" : "Ctrl+";
 
@@ -118,6 +119,9 @@ export function Toolbar({ onAction }: { onAction(a: OverlayAction): void }) {
         </button>
         <button className="tb-btn" data-tip={t("toolbar.pin")} onClick={() => onAction("pin")}>
           <Pin size={17} />
+        </button>
+        <button className="tb-btn" data-tip={t("toolbar.record")} onClick={() => onAction("record")}>
+          <Video size={17} />
         </button>
         <div className="tb-split">
           <button className="tb-btn" data-tip={`${t("toolbar.quickSave")} (${MOD}S)`} onClick={() => onAction("quickSave")}>

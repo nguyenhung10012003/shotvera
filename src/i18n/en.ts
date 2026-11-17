@@ -62,6 +62,19 @@ export const en = {
   "toolbar.textBackground": "Background",
   "toolbar.brush": "Brush",
   "toolbar.area": "Area",
+  "toolbar.record": "Record this area",
+
+  // record bar (overlay) and recording controls
+  "record.start": "Record",
+  "record.startHint": "Start recording (Enter)",
+  "record.micOn": "Microphone on",
+  "record.micOff": "Microphone off",
+  "record.oneDisplay": "Only the part on one display is recorded",
+  "rec.pause": "Pause",
+  "rec.resume": "Resume",
+  "rec.stop": "Stop and save",
+  "rec.discard": "Discard recording",
+  "rec.saving": "Saving…",
 
   // AI panel
   "ai.intro": "Ask anything about your capture, or let the AI edit it for you.",
@@ -127,12 +140,20 @@ export const en = {
   "home.empty": "Your captures will appear here",
   "home.emptyHint": "Press {shortcut} to start",
   "home.pinHint": "Click to pin on screen",
+  "home.recordVideo": "Record screen",
+  "home.recordVideoHint": "MP4 video of any area",
+  "home.recordGif": "Record GIF",
+  "home.recordGifHint": "Short looping clip",
+  "home.playHint": "Click to play",
+  "home.showInFolder": "Show in folder",
+  "home.removeFromRecent": "Remove from Recent",
 
   // settings window
   "settings.tab.general": "General",
   "settings.tab.shortcuts": "Shortcuts",
   "settings.tab.ai": "AI",
   "settings.tab.about": "About",
+  "settings.tab.recording": "Recording",
   "settings.language": "Language",
   "settings.saveFolder": "Save folder",
   "settings.saveFolderHint": "Used by Quick save ({shortcut})",
@@ -178,6 +199,19 @@ export const en = {
   "settings.effort.high": "Thorough",
   "settings.aiPrivacy":
     "Your capture is sent to Anthropic only when you open the AI panel and send a message. Shotvera doesn't store images or conversations on any other server.",
+  "settings.recordFormat": "Default format",
+  "settings.recordFps": "Frame rate",
+  "settings.recordFpsHint": "For MP4. GIFs are recorded at 12 fps",
+  "settings.recordMicrophone": "Record microphone",
+  "settings.recordMicrophoneHint": "Adds your voice to MP4 recordings",
+  "settings.recordClicks": "Highlight clicks",
+  "settings.recordClicksHint": "Shows a ring wherever you click",
+  "settings.recordRetina": "Full Retina resolution",
+  "settings.recordRetinaHint": "Sharper on zoom, but files are about 4 times larger",
+  "settings.recordShortcut": "Record screen",
+  "settings.recordShortcutHint": "Press again to stop the recording",
+  "settings.recordInfo":
+    "Recordings are saved to your save folder. To stop, press the shortcut again or click the red icon in the menu bar.",
   "settings.version": "Version {version}",
   "settings.tagline": "Capture, annotate, and ask AI about anything on your screen. Available for macOS, Windows and Linux.",
 } satisfies Record<string, string | Plural>;

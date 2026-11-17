@@ -8,6 +8,8 @@ const OverlayApp = lazy(() => import("./overlay/OverlayApp").then((m) => ({ defa
 const PinApp = lazy(() => import("./pin/PinApp").then((m) => ({ default: m.PinApp })));
 const SettingsApp = lazy(() => import("./settings/SettingsApp").then((m) => ({ default: m.SettingsApp })));
 const HomeApp = lazy(() => import("./home/HomeApp").then((m) => ({ default: m.HomeApp })));
+const RecorderApp = lazy(() => import("./recorder/RecorderApp").then((m) => ({ default: m.RecorderApp })));
+const FrameApp = lazy(() => import("./recorder/RecorderApp").then((m) => ({ default: m.FrameApp })));
 
 function Root() {
   const { view, params } = currentRoute();
@@ -19,6 +21,10 @@ function Root() {
       return <PinApp id={params.get("id") ?? ""} />;
     case "settings":
       return <SettingsApp />;
+    case "recorder":
+      return <RecorderApp />;
+    case "recframe":
+      return <FrameApp />;
     default:
       return <HomeApp />;
   }

@@ -78,6 +78,12 @@ The [release notes](https://github.com/nguyenhung10012003/shotvera/releases/late
 - *Capture & ask AI* and *Extract text* start a capture and open the assistant as soon as you pick a region.
 - Choose your model: Claude Opus 5.5 (default), Sonnet 5.5 or Haiku 5.5.
 
+**Screen recording**
+- Record any area, a window or a whole display as an **MP4** video or an animated **GIF**.
+- A floating control bar shows the timer and lets you pause, resume, stop or discard. A border marks the recorded area, and the menu bar icon turns red. Click the icon or press the shortcut again to stop.
+- On macOS, recordings use the hardware H.264 encoder and can include **microphone** sound. Options: 30 or 60 fps, click highlighting, full Retina resolution.
+- Finished recordings are saved to your save folder and appear in *Recent*. Click one to play it.
+
 **Output**
 - Copy to the clipboard.
 - Quick-save to a folder, or use *Save as…* to choose PNG or JPEG.
@@ -113,6 +119,8 @@ You can also start a capture from the command line. If Shotvera is already runni
 shotvera --capture        # capture
 shotvera --capture=ai     # capture, then open the AI assistant
 shotvera --capture=ocr    # capture, then extract text
+shotvera --record         # pick an area and record a video (run again to stop)
+shotvera --record=gif     # pick an area and record a GIF
 ```
 
 ## Keyboard shortcuts
@@ -123,6 +131,7 @@ shotvera --capture=ocr    # capture, then extract text
 | Copy and finish | `⌘ C`, `⌘ ↵` or double-click | `Ctrl C`, `Ctrl Enter` or double-click |
 | Quick save / Save as… | `⌘ S` / `⇧ ⌘ S` | `Ctrl S` / `Ctrl Shift S` |
 | Pin to screen | `F3` | `F3` |
+| Record the screen / stop recording (global, configurable) | `⌘ ⇧ 6` | `Ctrl Shift 6` |
 | Toggle the AI assistant | `I` | `I` |
 | Undo / Redo | `⌘ Z` / `⇧ ⌘ Z` | `Ctrl Z` / `Ctrl Y` |
 | Select, Rectangle, Ellipse, Line, Arrow | `V` `R` `O` `L` `A` | same |
@@ -134,7 +143,8 @@ shotvera --capture=ocr    # capture, then extract text
 
 ## Privacy
 
-- Captures are saved only where you choose. The 60 most recent are also kept on your device for the *Recent* list.
+- Captures and recordings are saved only where you choose. The 60 most recent are also listed in *Recent*.
+- The microphone is used only when you turn on sound for a recording. The sound goes into the video file and nowhere else.
 - Shotvera connects only to `api.anthropic.com`, and only when you use an AI feature. It then sends your chat messages and the selected region, scaled down to at most 1568 px on its longest edge.
 - There is no telemetry, analytics or crash reporting.
 
@@ -147,6 +157,7 @@ Shotvera is at **0.1**, an early release. Known limitations:
 - Shotvera is developed and tested on macOS, including multi-monitor setups. Windows and Linux builds have not been tested on real hardware yet.
 - On Linux, a selection drag stays within one monitor.
 - Text extraction uses the AI assistant, so it needs an API key. Offline OCR is on the roadmap.
+- On Windows and Linux, recordings have no sound yet, and a recording covers a single display.
 - Release builds are not code-signed or notarized yet.
 
 ## Architecture
@@ -242,7 +253,8 @@ Without them, builds are ad-hoc signed.
 ## Roadmap
 
 - [ ] Offline OCR (Apple Vision, Windows.Media.Ocr, Tesseract)
-- [ ] Screen recording (video / GIF)
+- [ ] Sound in recordings on Windows and Linux; system audio on every platform
+- [ ] Trim recordings before saving
 - [ ] AI image generation and editing with a configurable provider
 - [ ] Scrolling capture and timed capture
 - [ ] ScreenCaptureKit on macOS 14+

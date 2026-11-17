@@ -14,12 +14,15 @@ import {
   pinImage,
   quickSave,
   saveAs,
+  startRecording,
+  type RecordFormat,
 } from "../lib/platform";
 import { AiPanel } from "../ai/AiPanel";
 import { useAiSession } from "../ai/session";
 import { EditorStage } from "./EditorStage";
 import { buildPixelCanvas, exportComposite } from "./exportImage";
 import { Magnifier, pixelHex } from "./Magnifier";
+import { RecordBar } from "./RecordBar";
 import { SelectionLayer } from "./SelectionLayer";
 import { hostMonitor, rectToGlobal, rectToLocal } from "./space";
 import { useOverlay } from "./store";
@@ -135,7 +138,7 @@ export function OverlayApp({ monitor }: { monitor: number }) {
   const modeApplied = useRef<number | null>(null);
   useEffect(() => {
     if (!frame || phase !== "editing" || !selection || !isHost) return;
-    if (frame.mode === "image" || modeApplied.current === frame.sessionId) return;
+    if ((frame.mode !== "ai" && frame.mode !== "ocr") || modeApplied.current === frame.sessionId) return;
     modeApplied.current = frame.sessionId;
     useOverlay.getState().setAiOpen(true);
     if (frame.mode === "ocr") void useAiSession.getState().sendQuick("ocr");
@@ -149,6 +152,10 @@ export function OverlayApp({ monitor }: { monitor: number }) {
         return;
       }
       if (!st.frame || !st.selection) return;
+      if (action === "record") {
+        st.setMode("record");
+        return;
+      }
       if (action === "ai") {
         st.setAiOpen(!st.aiOpen);
         return;
@@ -196,11 +203,25 @@ export function OverlayApp({ monitor }: { monitor: number }) {
     [monitor],
   );
 
+  // Hides the overlays and records the selected area (the record bar's button or Enter).
+  const record = useCallback(async (format: RecordFormat, microphone: boolean) => {
+    const st = useOverlay.getState();
+    if (!st.space || !st.selection) return;
+    const g = rectToGlobal(st.space, st.selection);
+    try {
+      await startRecording({ x: g.x, y: g.y, width: g.w, height: g.h, format, microphone });
+    } catch (err) {
+      st.showToast(t("common.error", { message: String(err) }));
+    }
+  }, []);
+
   // Keyboard shortcuts. Text inputs (AI chat, text annotations) handle their own keys.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof Element && e.target.closest("textarea, input")) return;
       const st = useOverlay.getState();
+      const recordMode = st.frame?.mode === "record" || st.frame?.mode === "gif";
+      if (recordMode && e.key !== "Escape") return; // the record bar handles Enter
       const mod = e.metaKey || e.ctrlKey;
       const key = e.key.toLowerCase();
 
@@ -272,6 +293,7 @@ export function OverlayApp({ monitor }: { monitor: number }) {
   };
 
   if (!frame) return <div className="overlay-root loading" />;
+  const recordMode = frame.mode === "record" || frame.mode === "gif";
 
   const onMouseLeave = () => {
     // The pointer moved to another monitor: drop this monitor's loupe and hover highlight.
@@ -283,12 +305,15 @@ export function OverlayApp({ monitor }: { monitor: number }) {
   return (
     <div className="overlay-root" onContextMenu={onContextMenu} onMouseLeave={onMouseLeave}>
       <canvas ref={bg} className="bg-canvas" style={{ width: frame.cssWidth, height: frame.cssHeight }} />
-      <EditorStage onDoubleClickInside={() => void runAction("copy")} />
+      <EditorStage onDoubleClickInside={() => (recordMode ? undefined : void runAction("copy"))} />
       <SelectionLayer />
       {phase === "selecting" && <Magnifier />}
-      {phase === "editing" && selection && isHost && <Toolbar onAction={(a) => void runAction(a)} />}
+      {phase === "editing" && selection && isHost && !recordMode && <Toolbar onAction={(a) => void runAction(a)} />}
+      {phase === "editing" && selection && isHost && recordMode && (
+        <RecordBar onRecord={(format, microphone) => void record(format, microphone)} onClose={() => void runAction("close")} />
+      )}
       {editingTextId && <TextEditor />}
-      {phase === "editing" && selection && aiOpen && isHost && <AiPanel />}
+      {phase === "editing" && selection && aiOpen && isHost && !recordMode && <AiPanel />}
       {toast && (
         <div key={toast.id} className="toast">
           {toast.text}

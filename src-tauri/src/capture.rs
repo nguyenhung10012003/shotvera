@@ -56,6 +56,10 @@ pub enum CaptureMode {
     Ai,
     /// Extract the text of the region right away.
     Ocr,
+    /// Pick an area and record it as a video.
+    Record,
+    /// Pick an area and record it as a GIF.
+    Gif,
 }
 
 #[derive(Serialize)]
@@ -110,6 +114,10 @@ fn now_ms() -> u64 {
 
 /// Starts a capture unless one is already open.
 pub fn trigger(app: &AppHandle, mode: CaptureMode) {
+    // The overlays would end up in the video.
+    if crate::recording::is_active(app) {
+        return;
+    }
     let state = app.state::<AppState>();
     if state.capturing.swap(true, Ordering::SeqCst) {
         return;
@@ -320,6 +328,22 @@ fn show_all(app: &AppHandle, session_id: u64) {
 
 /// Hides every overlay and ends the capture session. Call on the main thread.
 pub fn hide_overlays(app: &AppHandle) {
+    dismiss_overlays(app);
+    // Hand focus back to the app the user was in, unless one of our own windows is still up.
+    #[cfg(target_os = "macos")]
+    {
+        let ours_visible = app.webview_windows().iter().any(|(label, w)| {
+            !label.starts_with(OVERLAY_PREFIX) && w.is_visible().unwrap_or(false)
+        });
+        if !ours_visible {
+            let _ = app.hide();
+        }
+    }
+}
+
+/// Hides the overlays and ends the capture session, but leaves the app visible (a recording is
+/// about to show its own windows).
+pub fn dismiss_overlays(app: &AppHandle) {
     log::info!("closing capture overlays");
     for (label, window) in app.webview_windows() {
         if label.starts_with(OVERLAY_PREFIX) {
@@ -332,16 +356,13 @@ pub fn hide_overlays(app: &AppHandle) {
         *capture = None;
     }
     let _ = app.emit("capture://end", ());
-    // Hand focus back to the app the user was in, unless one of our own windows is still up.
-    #[cfg(target_os = "macos")]
-    {
-        let ours_visible = app.webview_windows().iter().any(|(label, w)| {
-            !label.starts_with(OVERLAY_PREFIX) && w.is_visible().unwrap_or(false)
-        });
-        if !ours_visible {
-            let _ = app.hide();
-        }
-    }
+}
+
+/// `dismiss_overlays` from any thread.
+pub fn dismiss_overlays_async(app: &AppHandle) -> Result<(), String> {
+    let ui_app = app.clone();
+    app.run_on_main_thread(move || dismiss_overlays(&ui_app))
+        .map_err(|e| e.to_string())
 }
 
 /// `hide_overlays` from any thread.

@@ -6,7 +6,9 @@
     "overlay-*",
     "pin-*",
     "settings",
-    "home"
+    "home",
+    "recorder",
+    "recframe"
   ],
   "permissions": [
     "core:default",

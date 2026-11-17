@@ -9,7 +9,7 @@ use std::time::UNIX_EPOCH;
 use image::codecs::jpeg::JpegEncoder;
 use image::codecs::png::{CompressionType, FilterType, PngEncoder};
 use image::RgbaImage;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::ipc::{InvokeBody, Request, Response};
 use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_dialog::DialogExt;
@@ -42,6 +42,23 @@ pub struct PinMeta {
 pub struct HistoryItem {
     path: String,
     created_ms: u64,
+    /// For screen recordings: the video file this thumbnail stands for.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    video: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    duration_ms: Option<u64>,
+}
+
+/// Sidecar (`<thumbnail>.json`) that turns a history thumbnail into a recording entry.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RecordingInfo {
+    video: String,
+    duration_ms: u64,
+}
+
+fn recording_info(thumbnail: &Path) -> Option<RecordingInfo> {
+    serde_json::from_slice(&fs::read(thumbnail.with_extension("json")).ok()?).ok()
 }
 
 pub fn notify(app: &AppHandle, title: &str, body: &str) {
@@ -122,7 +139,14 @@ fn timestamp_name(ext: &str) -> String {
     )
 }
 
-fn unique_path(dir: &Path, name: &str) -> PathBuf {
+pub fn recording_name(ext: &str) -> String {
+    format!(
+        "Shotvera Recording {}.{ext}",
+        chrono::Local::now().format("%Y-%m-%d at %H.%M.%S")
+    )
+}
+
+pub fn unique_path(dir: &Path, name: &str) -> PathBuf {
     let candidate = dir.join(name);
     if !candidate.exists() {
         return candidate;
@@ -153,13 +177,45 @@ fn remember(app: &AppHandle, image: RgbaImage) {
             log::warn!("history save failed: {err}");
             return;
         }
-        let mut items = list_dir(&dir);
-        if items.len() > HISTORY_LIMIT {
-            for old in items.drain(HISTORY_LIMIT..) {
-                let _ = fs::remove_file(old.path);
-            }
-        }
+        trim_history(&dir);
     });
+}
+
+fn trim_history(dir: &Path) {
+    let mut items = list_dir(dir);
+    if items.len() > HISTORY_LIMIT {
+        for old in items.drain(HISTORY_LIMIT..) {
+            let path = PathBuf::from(old.path);
+            let _ = fs::remove_file(path.with_extension("json"));
+            let _ = fs::remove_file(path);
+        }
+    }
+}
+
+/// Adds a finished recording to the history: a thumbnail plus a sidecar pointing at the video.
+/// The video itself stays in the save folder.
+pub fn remember_recording(
+    app: &AppHandle,
+    thumbnail: Option<RgbaImage>,
+    video: &Path,
+    duration: std::time::Duration,
+) {
+    let Ok(dir) = history_dir(app) else { return };
+    let thumbnail = thumbnail
+        .unwrap_or_else(|| RgbaImage::from_pixel(320, 200, image::Rgba([30, 30, 34, 255])));
+    let path = unique_path(&dir, &timestamp_name("png"));
+    let info = RecordingInfo {
+        video: video.to_string_lossy().into_owned(),
+        duration_ms: duration.as_millis() as u64,
+    };
+    let saved = encode(&path, &thumbnail).and_then(|()| {
+        let json = serde_json::to_vec(&info).map_err(|e| e.to_string())?;
+        fs::write(path.with_extension("json"), json).map_err(|e| e.to_string())
+    });
+    match saved {
+        Ok(()) => trim_history(&dir),
+        Err(err) => log::warn!("could not add the recording to the history: {err}"),
+    }
 }
 
 fn list_dir(dir: &Path) -> Vec<HistoryItem> {
@@ -168,14 +224,19 @@ fn list_dir(dir: &Path) -> Vec<HistoryItem> {
         .flatten()
         .flatten()
         .filter(|e| e.path().extension().is_some_and(|x| x == "png"))
-        .map(|e| HistoryItem {
-            created_ms: e
-                .metadata()
-                .and_then(|m| m.modified())
-                .ok()
-                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                .map_or(0, |d| d.as_millis() as u64),
-            path: e.path().to_string_lossy().into_owned(),
+        .map(|e| {
+            let info = recording_info(&e.path());
+            HistoryItem {
+                created_ms: e
+                    .metadata()
+                    .and_then(|m| m.modified())
+                    .ok()
+                    .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                    .map_or(0, |d| d.as_millis() as u64),
+                path: e.path().to_string_lossy().into_owned(),
+                duration_ms: info.as_ref().map(|i| i.duration_ms),
+                video: info.map(|i| i.video),
+            }
         })
         .collect();
     items.sort_by_key(|item| std::cmp::Reverse(item.created_ms));
@@ -381,7 +442,37 @@ pub fn list_history(app: AppHandle) -> Result<Vec<HistoryItem>, String> {
 
 #[tauri::command]
 pub fn delete_history(app: AppHandle, path: String) -> Result<(), String> {
-    fs::remove_file(history_file(&app, &path)?).map_err(|e| e.to_string())
+    // For a recording this removes the entry only; the video stays in the save folder.
+    let file = history_file(&app, &path)?;
+    let _ = fs::remove_file(file.with_extension("json"));
+    fs::remove_file(file).map_err(|e| e.to_string())
+}
+
+/// The video behind a history entry. Only paths written by Shotvera itself are accepted.
+fn recording_video(app: &AppHandle, path: &str) -> Result<PathBuf, String> {
+    let info = recording_info(&history_file(app, path)?).ok_or("this item is not a recording")?;
+    let video = PathBuf::from(info.video);
+    if video.exists() {
+        Ok(video)
+    } else {
+        Err("the recording was moved or deleted".into())
+    }
+}
+
+#[tauri::command]
+pub fn open_recording(app: AppHandle, path: String) -> Result<(), String> {
+    let video = recording_video(&app, &path)?;
+    app.opener()
+        .open_path(video.to_string_lossy(), None::<&str>)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn reveal_recording(app: AppHandle, path: String) -> Result<(), String> {
+    let video = recording_video(&app, &path)?;
+    app.opener()
+        .reveal_item_in_dir(video)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

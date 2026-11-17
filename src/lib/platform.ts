@@ -23,7 +23,8 @@ export function currentRoute(): { view: string; params: URLSearchParams } {
 // ---------------------------------------------------------------------------------------------
 
 /** What happens after a region is selected: plain capture, open the AI chat, or extract text. */
-export type CaptureMode = "image" | "ai" | "ocr";
+/** What the overlay does once an area is selected: annotate, ask AI, extract text, or record. */
+export type CaptureMode = "image" | "ai" | "ocr" | "record" | "gif";
 
 export interface CaptureMeta {
   sessionId: number;
@@ -290,8 +291,12 @@ export async function resolvedSaveDir(): Promise<string> {
 }
 
 export interface HistoryItem {
+  /** The thumbnail image in the history folder. */
   path: string;
   createdMs: number;
+  /** Set for screen recordings: the video file the thumbnail stands for. */
+  video?: string;
+  durationMs?: number;
 }
 
 export async function listHistory(): Promise<HistoryItem[]> {
@@ -316,6 +321,74 @@ export async function copyHistoryItem(path: string): Promise<void> {
 export async function pinHistoryItem(path: string): Promise<void> {
   if (isTauri) await invoke("pin_history_item", { path });
 }
+
+/** Opens a recording from the history in the default video player. */
+export async function openRecording(path: string): Promise<void> {
+  if (isTauri) await invoke("open_recording", { path });
+}
+
+/** Shows a recording from the history in Finder / Explorer. */
+export async function revealRecording(path: string): Promise<void> {
+  if (isTauri) await invoke("reveal_recording", { path });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Screen recording
+// ---------------------------------------------------------------------------------------------
+
+export type RecordFormat = "mp4" | "gif";
+
+export interface RecordRequest {
+  /** The area in global units (points on macOS, physical pixels elsewhere). */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  format: RecordFormat;
+  microphone: boolean;
+}
+
+export interface RecordingStatus {
+  state: "idle" | "recording" | "paused" | "processing";
+  elapsedMs: number;
+  format: RecordFormat | null;
+}
+
+/** Hides the overlays and starts recording the area. Rejects if the recorder cannot start. */
+export async function startRecording(request: RecordRequest): Promise<void> {
+  if (isTauri) await invoke("start_recording", { request });
+  else console.info("recording (mock)", request);
+}
+
+export async function stopRecording(): Promise<void> {
+  if (isTauri) await invoke("stop_recording");
+}
+
+/** Stops and discards the recording. */
+export async function cancelRecording(): Promise<void> {
+  if (isTauri) await invoke("cancel_recording");
+}
+
+export async function pauseRecording(): Promise<void> {
+  if (isTauri) await invoke("pause_recording");
+}
+
+export async function resumeRecording(): Promise<void> {
+  if (isTauri) await invoke("resume_recording");
+}
+
+export async function recordingStatus(): Promise<RecordingStatus> {
+  if (!isTauri) return { state: "recording", elapsedMs: 0, format: "mp4" };
+  return invoke<RecordingStatus>("recording_status");
+}
+
+export async function onRecordingState(cb: (status: RecordingStatus) => void): Promise<UnlistenFn> {
+  if (!isTauri) return () => {};
+  return listen<RecordingStatus>("recording://state", (e) => cb(e.payload));
+}
+
+/** Microphone recording is only implemented by the native macOS recorder. */
+export const canRecordAudio = navigator.platform.toLowerCase().includes("mac");
 
 export async function hideCurrentWindow(): Promise<void> {
   if (!isTauri) return;
@@ -397,6 +470,11 @@ export async function onLanguageChange(cb: (language: string) => void): Promise<
   };
   window.addEventListener("storage", onStorage);
   return () => window.removeEventListener("storage", onStorage);
+}
+
+/** Registers the global record shortcut (starts and stops recordings). */
+export async function applyRecordShortcut(shortcut: string): Promise<void> {
+  if (isTauri) await invoke("set_record_shortcut", { shortcut });
 }
 
 /** Registers the global capture shortcut; rejects with a readable message if it is invalid or taken. */

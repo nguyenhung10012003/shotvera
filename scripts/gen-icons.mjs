@@ -1,6 +1,7 @@
 // Generates Shotvera's own icon artwork (no third-party assets):
 //   src-tauri/icons/source.png  1024x1024 app icon (feed it to `npx tauri icon`)
 //   src-tauri/icons/tray.png    44x44 monochrome template icon for the macOS menu bar / tray
+//   src-tauri/icons/tray-recording.png  tray icon while recording: a red "stop" button
 // Usage: node scripts/gen-icons.mjs
 import { writeFileSync, mkdirSync } from "node:fs";
 import { deflateSync } from "node:zlib";
@@ -125,7 +126,17 @@ function trayIcon(u, v) {
   return null;
 }
 
+/** Shown in the menu bar while recording: a red disc with a white stop square (click to stop). */
+function trayRecordingIcon(u, v) {
+  const x = u * TRAY;
+  const y = v * TRAY;
+  if (insideRoundRect(x, y, 12.5, 12.5, 23.5, 23.5, 2.2)) return [255, 255, 255, 255];
+  if (Math.hypot(x - 18, y - 18) <= 13.5) return [255, 59, 48, 255];
+  return null;
+}
+
 mkdirSync("src-tauri/icons", { recursive: true });
 writeFileSync("src-tauri/icons/source.png", png(1024, 1024, render(1024, appIcon)));
 writeFileSync("src-tauri/icons/tray.png", png(TRAY, TRAY, render(TRAY, trayIcon, 8)));
-console.log("wrote src-tauri/icons/source.png and src-tauri/icons/tray.png");
+writeFileSync("src-tauri/icons/tray-recording.png", png(TRAY, TRAY, render(TRAY, trayRecordingIcon, 8)));
+console.log("wrote src-tauri/icons/source.png, tray.png and tray-recording.png");
