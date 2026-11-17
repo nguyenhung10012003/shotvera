@@ -1,4 +1,5 @@
 mod capture;
+mod i18n;
 mod output;
 mod platform;
 mod secrets;
@@ -10,9 +11,10 @@ use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 
 use capture::CaptureMode;
+use i18n::{Lang, Text};
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, RunEvent, WindowEvent, Wry};
+use tauri::{AppHandle, Emitter, Manager, RunEvent, WindowEvent, Wry};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 /// Command-line flag that starts a capture.
@@ -41,7 +43,7 @@ pub struct AppState {
 fn register_shortcut(app: &AppHandle, accelerator: &str) -> Result<(), String> {
     let shortcut: Shortcut = accelerator
         .parse()
-        .map_err(|e| format!("Phím tắt không hợp lệ: {e}"))?;
+        .map_err(|e| i18n::tr_error(app, Text::ShortcutInvalid, e))?;
     let state = app.state::<AppState>();
     let mut current = state.shortcut.lock().map_err(|e| e.to_string())?;
     let gs = app.global_shortcut();
@@ -63,7 +65,7 @@ fn register_shortcut(app: &AppHandle, accelerator: &str) -> Result<(), String> {
                     *current = Some(old);
                 }
             }
-            Err(format!("Phím tắt đang được dùng bởi ứng dụng khác ({err})"))
+            Err(i18n::tr_error(app, Text::ShortcutTaken, err))
         }
     }
 }
@@ -71,6 +73,20 @@ fn register_shortcut(app: &AppHandle, accelerator: &str) -> Result<(), String> {
 #[tauri::command]
 fn set_capture_shortcut(app: AppHandle, shortcut: String) -> Result<(), String> {
     register_shortcut(&app, &shortcut)
+}
+
+/// Switches the UI language: rebuilds the tray menu, retitles native windows and tells every
+/// webview to re-render. The webview has already saved the choice to `settings.json`.
+#[tauri::command]
+fn set_language(app: AppHandle, language: String) -> Result<(), String> {
+    let lang = Lang::parse(&language);
+    let menu = build_menu(&app, lang).map_err(|e| e.to_string())?;
+    if let Some(tray) = app.tray_by_id(TRAY_ID) {
+        tray.set_menu(Some(menu)).map_err(|e| e.to_string())?;
+    }
+    windows::apply_language(&app, lang);
+    app.emit("app://language", lang.code())
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -88,27 +104,22 @@ fn capture_flag(args: &[String]) -> Option<CaptureMode> {
     })
 }
 
-fn build_tray(app: &AppHandle) -> tauri::Result<()> {
+const TRAY_ID: &str = "main";
+
+/// Builds the tray menu in `lang`. Remembers its capture item so the shortcut label can follow
+/// the configured shortcut.
+fn build_menu(app: &AppHandle, lang: Lang) -> tauri::Result<Menu<Wry>> {
+    let item = |id: &str, text: Text, accelerator: Option<&str>| {
+        MenuItem::with_id(app, id, text.get(lang), true, accelerator)
+    };
     let accelerator = settings::capture_shortcut(app);
-    let capture = MenuItem::with_id(
-        app,
-        "capture",
-        "Chụp màn hình",
-        true,
-        Some(accelerator.as_str()),
-    )?;
-    let capture_ai = MenuItem::with_id(app, "capture_ai", "Chụp và hỏi AI", true, None::<&str>)?;
-    let capture_ocr = MenuItem::with_id(
-        app,
-        "capture_ocr",
-        "Chụp và trích xuất văn bản",
-        true,
-        None::<&str>,
-    )?;
-    let home = MenuItem::with_id(app, "home", "Ảnh gần đây…", true, None::<&str>)?;
-    let folder = MenuItem::with_id(app, "folder", "Mở thư mục ảnh", true, None::<&str>)?;
-    let settings = MenuItem::with_id(app, "settings", "Cài đặt…", true, Some("CmdOrCtrl+,"))?;
-    let quit = MenuItem::with_id(app, "quit", "Thoát Shotvera", true, Some("CmdOrCtrl+Q"))?;
+    let capture = item("capture", Text::MenuCapture, Some(accelerator.as_str()))?;
+    let capture_ai = item("capture_ai", Text::MenuCaptureAi, None)?;
+    let capture_ocr = item("capture_ocr", Text::MenuCaptureOcr, None)?;
+    let home = item("home", Text::MenuRecent, None)?;
+    let folder = item("folder", Text::MenuOpenFolder, None)?;
+    let settings = item("settings", Text::MenuSettings, Some("CmdOrCtrl+,"))?;
+    let quit = item("quit", Text::MenuQuit, Some("CmdOrCtrl+Q"))?;
     let menu = Menu::with_items(
         app,
         &[
@@ -126,8 +137,12 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     if let Ok(mut slot) = app.state::<AppState>().capture_menu_item.lock() {
         *slot = Some(capture);
     }
+    Ok(menu)
+}
 
-    TrayIconBuilder::with_id("main")
+fn build_tray(app: &AppHandle) -> tauri::Result<()> {
+    let menu = build_menu(app, i18n::current(app))?;
+    TrayIconBuilder::with_id(TRAY_ID)
         .icon(tauri::include_image!("icons/tray.png"))
         .icon_as_template(true)
         .tooltip("Shotvera")
@@ -258,6 +273,7 @@ pub fn run() {
             output::resolved_save_dir,
             secrets::get_api_key,
             secrets::set_api_key,
+            set_language,
             windows::open_settings,
             set_capture_shortcut,
             quit_app,

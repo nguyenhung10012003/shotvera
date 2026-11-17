@@ -211,7 +211,11 @@ pub async fn quick_save(app: AppHandle, request: Request<'_>) -> Result<String, 
     let path = unique_path(&dir, &timestamp_name(&settings::save_format(&app)));
     encode(&path, &image)?;
     capture::hide_overlays_async(&app)?;
-    notify(&app, "Đã lưu ảnh", &path.to_string_lossy());
+    notify(
+        &app,
+        crate::i18n::tr(&app, crate::i18n::Text::ImageSaved),
+        &path.to_string_lossy(),
+    );
     remember(&app, image);
     Ok(path.to_string_lossy().into_owned())
 }
@@ -226,7 +230,7 @@ pub async fn save_as(app: AppHandle, request: Request<'_>) -> Result<Option<Stri
     let picked = app
         .dialog()
         .file()
-        .set_title("Lưu ảnh chụp màn hình")
+        .set_title(crate::i18n::tr(&app, crate::i18n::Text::SaveDialogTitle))
         .set_directory(&dir)
         .set_file_name(timestamp_name(&settings::save_format(&app)))
         .add_filter("PNG", &["png"])

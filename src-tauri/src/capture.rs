@@ -121,7 +121,11 @@ pub fn trigger(app: &AppHandle, mode: CaptureMode) {
             app.state::<AppState>()
                 .capturing
                 .store(false, Ordering::SeqCst);
-            output::notify(&app, "Không chụp được màn hình", &err);
+            output::notify(
+                &app,
+                crate::i18n::tr(&app, crate::i18n::Text::CaptureFailed),
+                &err,
+            );
         }
     });
 }
@@ -141,10 +145,7 @@ pub fn trigger_after_ui_hides(app: &AppHandle, mode: CaptureMode) {
 fn capture_now(app: &AppHandle, mode: CaptureMode) -> Result<(), String> {
     if !platform::has_screen_permission() {
         platform::request_screen_permission();
-        return Err(
-            "Hãy cấp quyền Ghi màn hình (Screen Recording) cho Shotvera trong Cài đặt hệ thống, rồi mở lại ứng dụng."
-                .into(),
-        );
+        return Err(crate::i18n::tr(app, crate::i18n::Text::NeedScreenPermission).into());
     }
 
     let monitors = xcap::Monitor::all().map_err(|e| e.to_string())?;
@@ -163,7 +164,7 @@ fn capture_now(app: &AppHandle, mode: CaptureMode) -> Result<(), String> {
         });
     }
     if shots.is_empty() {
-        return Err("Không tìm thấy màn hình nào.".into());
+        return Err(crate::i18n::tr(app, crate::i18n::Text::NoDisplay).into());
     }
 
     for m in &shots {

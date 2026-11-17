@@ -87,6 +87,7 @@ The [release notes](https://github.com/nguyenhung10012003/shotvera/releases/late
 - A one-click popover offers capture, *Capture & ask AI*, *Extract text* and your recent captures.
 - Click a recent capture to pin it. Hover over it to copy or delete it.
 - Settings: global shortcut, launch at login, save folder, image format.
+- Available in English (default) and Vietnamese. Switch in Settings → General → Language; every window updates immediately.
 
 ## Getting started
 
@@ -143,7 +144,6 @@ See [SECURITY.md](SECURITY.md) for the full security model and how to report a v
 
 Shotvera is at **0.1**, an early release. Known limitations:
 
-- The interface is in **Vietnamese** for now. English localization is planned.
 - Shotvera is developed and tested on macOS, including multi-monitor setups. Windows and Linux builds have not been tested on real hardware yet.
 - On Linux, a selection drag stays within one monitor.
 - Text extraction uses the AI assistant, so it needs an API key. Offline OCR is on the roadmap.
@@ -241,13 +241,18 @@ Without them, builds are ad-hoc signed.
 
 ## Roadmap
 
-- [ ] English localization
 - [ ] Offline OCR (Apple Vision, Windows.Media.Ocr, Tesseract)
 - [ ] Screen recording (video / GIF)
 - [ ] AI image generation and editing with a configurable provider
 - [ ] Scrolling capture and timed capture
 - [ ] ScreenCaptureKit on macOS 14+
 - [ ] Signed and notarized releases
+
+## Adding a language
+
+1. Copy `src/i18n/vi.ts` to `src/i18n/<code>.ts` and translate the values. TypeScript reports any missing key.
+2. Register the new file in `CATALOGS` and `LOCALES` in `src/i18n/index.ts`.
+3. Add the language to `Lang` in `src-tauri/src/i18n.rs`. This file holds the tray menu, notifications and dialog titles.
 
 ## Contributing
 

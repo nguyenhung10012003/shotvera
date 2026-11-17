@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { loadFrame } from "../lib/platform";
 import { renderAnnotations } from "./exportLayer";
 import { annotationToGlobal, intersect, mapAnnotation, monitorRect, rectToGlobal } from "./space";
@@ -25,7 +26,7 @@ async function monitorBitmap(index: number): Promise<ImageBitmap> {
 export async function exportComposite(withAnnotations = true): Promise<ImageData> {
   const st = useOverlay.getState();
   const { space, selection, frame } = st;
-  if (!space || !selection || !frame) throw new Error("Chưa có vùng chọn");
+  if (!space || !selection || !frame) throw new Error(t("overlay.noSelection"));
   const sel = rectToGlobal(space, selection);
 
   const parts = space.layout

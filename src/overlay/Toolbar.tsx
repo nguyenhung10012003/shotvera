@@ -22,7 +22,8 @@ import {
   Undo2,
   X,
 } from "lucide-react";
-import { EMOJIS, PALETTE, TOOL_LABELS, type ToolId } from "../lib/annotations";
+import { useT } from "../i18n";
+import { EMOJIS, PALETTE, TOOL_SHORTCUTS, type ToolId } from "../lib/annotations";
 import { placeBelowOrAbove } from "../lib/geometry";
 import { useOverlay } from "./store";
 
@@ -53,6 +54,7 @@ export function Toolbar({ onAction }: { onAction(a: OverlayAction): void }) {
   const selectedId = useOverlay((s) => s.selectedId);
   const aiOpen = useOverlay((s) => s.aiOpen);
   const { setTool, undo, redo, removeAnnotations } = useOverlay.getState();
+  const t = useT();
 
   const bar = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 640, h: 44 });
@@ -84,41 +86,41 @@ export function Toolbar({ onAction }: { onAction(a: OverlayAction): void }) {
         style={{ left: pos.x, top: pos.y }}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {TOOLS.map((t) => (
+        {TOOLS.map((item) => (
           <button
-            key={t.id}
-            className={`tb-btn${tool === t.id ? " active" : ""}`}
-            data-tip={`${TOOL_LABELS[t.id].label} (${TOOL_LABELS[t.id].key})`}
-            onClick={() => setTool(tool === t.id && t.id !== "select" ? "select" : t.id)}
+            key={item.id}
+            className={`tb-btn${tool === item.id ? " active" : ""}`}
+            data-tip={`${t(`tool.${item.id}`)} (${TOOL_SHORTCUTS[item.id]})`}
+            onClick={() => setTool(tool === item.id && item.id !== "select" ? "select" : item.id)}
           >
-            {t.icon}
+            {item.icon}
           </button>
         ))}
         <span className="tb-sep" />
-        <button className="tb-btn" disabled={!canUndo} data-tip={`Hoàn tác (${MOD}Z)`} onClick={undo}>
+        <button className="tb-btn" disabled={!canUndo} data-tip={t("toolbar.undo", { shortcut: `${MOD}Z` })} onClick={undo}>
           <Undo2 size={17} />
         </button>
-        <button className="tb-btn" disabled={!canRedo} data-tip={`Làm lại (${MOD}⇧Z)`} onClick={redo}>
+        <button className="tb-btn" disabled={!canRedo} data-tip={t("toolbar.redo", { shortcut: `${MOD}⇧Z` })} onClick={redo}>
           <Redo2 size={17} />
         </button>
         {selectedId && (
-          <button className="tb-btn" data-tip="Xoá hình đang chọn (Delete)" onClick={() => removeAnnotations([selectedId])}>
+          <button className="tb-btn" data-tip={t("toolbar.delete")} onClick={() => removeAnnotations([selectedId])}>
             <Trash size={17} />
           </button>
         )}
         <span className="tb-sep" />
-        <button className={`tb-btn ai${aiOpen ? " on" : ""}`} data-tip="Hỏi AI về ảnh này (I)" onClick={() => onAction("ai")}>
+        <button className={`tb-btn ai${aiOpen ? " on" : ""}`} data-tip={t("toolbar.askAi")} onClick={() => onAction("ai")}>
           <Sparkles size={16} />
           <span>AI</span>
         </button>
-        <button className="tb-btn" data-tip="Trích xuất văn bản (OCR)" onClick={() => onAction("ocr")}>
+        <button className="tb-btn" data-tip={t("toolbar.ocr")} onClick={() => onAction("ocr")}>
           <ScanText size={17} />
         </button>
-        <button className="tb-btn" data-tip="Ghim lên màn hình (F3)" onClick={() => onAction("pin")}>
+        <button className="tb-btn" data-tip={t("toolbar.pin")} onClick={() => onAction("pin")}>
           <Pin size={17} />
         </button>
         <div className="tb-split">
-          <button className="tb-btn" data-tip={`Lưu nhanh (${MOD}S)`} onClick={() => onAction("quickSave")}>
+          <button className="tb-btn" data-tip={`${t("toolbar.quickSave")} (${MOD}S)`} onClick={() => onAction("quickSave")}>
             <Download size={17} />
           </button>
           <button className="tb-btn tb-caret" onClick={() => setSaveMenu((v) => !v)}>
@@ -127,19 +129,19 @@ export function Toolbar({ onAction }: { onAction(a: OverlayAction): void }) {
           {saveMenu && (
             <div className="menu" onMouseLeave={() => setSaveMenu(false)}>
               <button onClick={() => onAction("quickSave")}>
-                Lưu nhanh <kbd>{MOD}S</kbd>
+                {t("toolbar.quickSave")} <kbd>{MOD}S</kbd>
               </button>
               <button onClick={() => onAction("saveAs")}>
-                Lưu thành… <kbd>{MOD}⇧S</kbd>
+                {t("toolbar.saveAs")} <kbd>{MOD}⇧S</kbd>
               </button>
             </div>
           )}
         </div>
         <span className="tb-sep" />
-        <button className="tb-btn" data-tip="Đóng (Esc)" onClick={() => onAction("close")}>
+        <button className="tb-btn" data-tip={t("toolbar.close")} onClick={() => onAction("close")}>
           <X size={18} />
         </button>
-        <button className="tb-btn primary" data-tip={`Sao chép (${MOD}C / ${MOD}↵)`} onClick={() => onAction("copy")}>
+        <button className="tb-btn primary" data-tip={t("toolbar.copy", { shortcut: `${MOD}C / ${MOD}↵` })} onClick={() => onAction("copy")}>
           <Check size={18} />
         </button>
       </div>
@@ -155,6 +157,7 @@ function ToolOptions({ left, top }: { left: number; top: number }) {
   const style = useOverlay((s) => s.style);
   const selected = useOverlay((s) => s.annotations.find((a) => a.id === s.selectedId));
   const setStyle = useOverlay.getState().setStyle;
+  const t = useT();
 
   const kind = selected?.kind;
   const isText = tool === "text" || kind === "text";
@@ -176,7 +179,7 @@ function ToolOptions({ left, top }: { left: number; top: number }) {
               aria-label={c}
             />
           ))}
-          <label className="swatch custom" data-tip="Màu khác">
+          <label className="swatch custom" data-tip={t("toolbar.customColor")}>
             <input type="color" value={style.color} onChange={(e) => setStyle({ color: e.target.value.toUpperCase() })} />
           </label>
         </div>
@@ -193,33 +196,33 @@ function ToolOptions({ left, top }: { left: number; top: number }) {
       {showColors && <span className="opt-sep" />}
       {isText ? (
         <label className="opt-range">
-          <span>Cỡ chữ</span>
+          <span>{t("toolbar.fontSize")}</span>
           <input type="range" min={10} max={72} value={style.fontSize} onChange={(e) => setStyle({ fontSize: Number(e.target.value) })} />
           <b>{style.fontSize}</b>
         </label>
       ) : (
         <label className="opt-range">
-          <span>{isMosaic ? "Cỡ cọ" : isEmoji ? "Kích thước" : "Nét"}</span>
+          <span>{t(isMosaic ? "toolbar.brushSize" : isEmoji ? "toolbar.size" : "toolbar.stroke")}</span>
           <input type="range" min={1} max={24} value={style.strokeWidth} onChange={(e) => setStyle({ strokeWidth: Number(e.target.value) })} />
           <b>{style.strokeWidth}</b>
         </label>
       )}
       {canFill && (
         <div className="seg">
-          <button className={!style.filled ? "on" : ""} onClick={() => setStyle({ filled: false })}>Viền</button>
-          <button className={style.filled ? "on" : ""} onClick={() => setStyle({ filled: true })}>Tô đặc</button>
+          <button className={!style.filled ? "on" : ""} onClick={() => setStyle({ filled: false })}>{t("toolbar.outline")}</button>
+          <button className={style.filled ? "on" : ""} onClick={() => setStyle({ filled: true })}>{t("toolbar.filled")}</button>
         </div>
       )}
       {isText && (
         <div className="seg">
-          <button className={!style.textBackground ? "on" : ""} onClick={() => setStyle({ textBackground: false })}>Chữ</button>
-          <button className={style.textBackground ? "on" : ""} onClick={() => setStyle({ textBackground: true })}>Có nền</button>
+          <button className={!style.textBackground ? "on" : ""} onClick={() => setStyle({ textBackground: false })}>{t("toolbar.plainText")}</button>
+          <button className={style.textBackground ? "on" : ""} onClick={() => setStyle({ textBackground: true })}>{t("toolbar.textBackground")}</button>
         </div>
       )}
       {tool === "mosaic" && (
         <div className="seg">
-          <button className={style.mosaicMode === "brush" ? "on" : ""} onClick={() => setStyle({ mosaicMode: "brush" })}>Cọ</button>
-          <button className={style.mosaicMode === "rect" ? "on" : ""} onClick={() => setStyle({ mosaicMode: "rect" })}>Vùng</button>
+          <button className={style.mosaicMode === "brush" ? "on" : ""} onClick={() => setStyle({ mosaicMode: "brush" })}>{t("toolbar.brush")}</button>
+          <button className={style.mosaicMode === "rect" ? "on" : ""} onClick={() => setStyle({ mosaicMode: "rect" })}>{t("toolbar.area")}</button>
         </div>
       )}
     </div>

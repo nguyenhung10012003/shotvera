@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { t } from "../i18n";
 import type { ToolId } from "../lib/annotations";
 import {
   closeOverlays,
@@ -168,12 +169,12 @@ export function OverlayApp({ monitor }: { monitor: number }) {
             await copyImage(img);
             const settings = await loadSettings();
             if (settings.closeAfterCopy && isTauri) await closeOverlays();
-            else st.showToast("Đã sao chép vào clipboard");
+            else st.showToast(t("overlay.copiedToClipboard"));
             break;
           }
           case "quickSave": {
             const path = await quickSave(img);
-            if (!isTauri) st.showToast(`Đã lưu ${path}`);
+            if (!isTauri) st.showToast(t("overlay.savedTo", { path }));
             break;
           }
           case "saveAs":
@@ -187,7 +188,7 @@ export function OverlayApp({ monitor }: { monitor: number }) {
           }
         }
       } catch (err) {
-        st.showToast(`Lỗi: ${String(err)}`);
+        st.showToast(t("common.error", { message: String(err) }));
       } finally {
         busy.current = false;
       }
@@ -214,7 +215,7 @@ export function OverlayApp({ monitor }: { monitor: number }) {
         const px = Math.min(st.frame.width - 1, Math.floor(st.cursor.x * st.frame.scale));
         const py = Math.min(st.frame.height - 1, Math.floor(st.cursor.y * st.frame.scale));
         const hex = pixelHex(st.frame.data, st.frame.width, px, py);
-        void navigator.clipboard.writeText(hex).then(() => st.showToast(`Đã sao chép màu ${hex}`));
+        void navigator.clipboard.writeText(hex).then(() => st.showToast(t("overlay.colorCopied", { hex })));
         return;
       }
       if (st.phase !== "editing") return;

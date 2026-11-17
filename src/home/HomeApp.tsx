@@ -18,19 +18,23 @@ import {
   type CaptureMode,
   type HistoryItem,
 } from "../lib/platform";
+import { getLocale, useI18n, useT } from "../i18n";
 import { prettyShortcut } from "../settings/SettingsApp";
 import "./home.css";
 
 const IS_MAC = navigator.platform.toLowerCase().includes("mac");
 const RECENT_LIMIT = 9;
 
+/** "now", "5 minutes ago", "yesterday", then a short date, in the UI language. */
 function timeAgo(ms: number): string {
+  const locale = getLocale();
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
   const s = Math.max(0, (Date.now() - ms) / 1000);
-  if (s < 60) return "vừa xong";
-  if (s < 3600) return `${Math.floor(s / 60)} phút trước`;
-  if (s < 86400) return `${Math.floor(s / 3600)} giờ trước`;
-  if (s < 172800) return "hôm qua";
-  return new Date(ms).toLocaleDateString("vi-VN", { day: "numeric", month: "numeric" });
+  if (s < 60) return rtf.format(0, "second");
+  if (s < 3600) return rtf.format(-Math.floor(s / 60), "minute");
+  if (s < 86400) return rtf.format(-Math.floor(s / 3600), "hour");
+  if (s < 172800) return rtf.format(-1, "day");
+  return new Date(ms).toLocaleDateString(locale, { day: "numeric", month: "short" });
 }
 
 /** Shotvera's mark: viewfinder corners and an AI sparkle on the brand gradient. */
@@ -62,6 +66,8 @@ export function HomeApp() {
   const [shortcut, setShortcut] = useState("");
   const [version, setVersion] = useState("");
   const [flash, setFlash] = useState<string | null>(null);
+  const t = useT();
+  const locale = useI18n((s) => s.locale);
 
   const refresh = useCallback(async () => {
     const list = await listHistory();
@@ -92,7 +98,7 @@ export function HomeApp() {
   useLayoutEffect(() => {
     const el = root.current;
     if (el) void fitWindowHeight(Math.ceil(el.getBoundingClientRect().height));
-  }, [items, shortcut, version]);
+  }, [items, shortcut, version, locale]);
 
   const notify = (text: string) => {
     setFlash(text);
@@ -109,14 +115,14 @@ export function HomeApp() {
           </span>
           <div>
             <b>Shotvera</b>
-            <small>{version ? `Phiên bản ${version}` : " "}</small>
+            <small>{version ? t("home.version", { version }) : " "}</small>
           </div>
         </div>
         <div className="head-actions">
-          <button className="ghost" title="Cài đặt" onClick={() => void openSettings()}>
+          <button className="ghost" title={t("home.settings")} onClick={() => void openSettings()}>
             <Settings size={16} />
           </button>
-          <button className="ghost" title="Thoát Shotvera" onClick={() => void quitApp()}>
+          <button className="ghost" title={t("home.quit")} onClick={() => void quitApp()}>
             <Power size={16} />
           </button>
         </div>
@@ -127,8 +133,8 @@ export function HomeApp() {
           <Camera size={19} />
         </span>
         <span className="hero-text">
-          <b>Chụp màn hình</b>
-          <small>Chọn vùng, chú thích, sao chép</small>
+          <b>{t("home.capture")}</b>
+          <small>{t("home.captureHint")}</small>
         </span>
         {shortcut && <kbd>{shortcut}</kbd>}
       </button>
@@ -136,48 +142,48 @@ export function HomeApp() {
       <div className="tiles">
         <button className="tile ai" onClick={() => capture("ai")}>
           <Sparkles size={18} />
-          <b>Chụp &amp; hỏi AI</b>
-          <small>Giải thích, chỉnh sửa ảnh bằng AI</small>
+          <b>{t("home.captureAi")}</b>
+          <small>{t("home.captureAiHint")}</small>
         </button>
         <button className="tile" onClick={() => capture("ocr")}>
           <ScanText size={18} />
-          <b>Trích xuất chữ</b>
-          <small>Lấy văn bản trong vùng chọn</small>
+          <b>{t("home.extractText")}</b>
+          <small>{t("home.extractTextHint")}</small>
         </button>
       </div>
 
       <section className="recent">
         <div className="recent-head">
-          <h4>Gần đây</h4>
+          <h4>{t("home.recent")}</h4>
           <button className="link" onClick={() => void openSaveFolder()}>
             <FolderOpen size={13} />
-            Mở thư mục
+            {t("home.openFolder")}
           </button>
         </div>
         {items.length === 0 ? (
           <div className="empty">
             <Camera size={24} />
-            <p>Ảnh bạn chụp sẽ xuất hiện ở đây</p>
-            {shortcut && <small>Nhấn {shortcut} để bắt đầu</small>}
+            <p>{t("home.empty")}</p>
+            {shortcut && <small>{t("home.emptyHint", { shortcut })}</small>}
           </div>
         ) : (
           <div className="grid">
             {items.map((i) => (
-              <div key={i.path} className="shot" title="Bấm để xem nổi trên màn hình" onClick={() => void pinHistoryItem(i.path)}>
+              <div key={i.path} className="shot" title={t("home.pinHint")} onClick={() => void pinHistoryItem(i.path)}>
                 <img src={i.url} alt="" draggable={false} />
                 <span className="shot-time">{timeAgo(i.createdMs)}</span>
                 <div className="shot-actions">
                   <button
-                    title="Sao chép"
+                    title={t("common.copy")}
                     onClick={(e) => {
                       e.stopPropagation();
-                      void copyHistoryItem(i.path).then(() => notify("Đã sao chép"));
+                      void copyHistoryItem(i.path).then(() => notify(t("common.copied")));
                     }}
                   >
                     <Copy size={12} />
                   </button>
                   <button
-                    title="Xoá"
+                    title={t("common.delete")}
                     onClick={(e) => {
                       e.stopPropagation();
                       void deleteHistory(i.path).then(refresh);

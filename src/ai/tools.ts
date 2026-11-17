@@ -1,5 +1,6 @@
 import { betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
+import { t } from "../i18n";
 
 const color = z
   .string()
@@ -66,7 +67,7 @@ export function buildTools(bridge: EditorBridge, report: ToolReport) {
     eager_input_streaming: true,
     run: async ({ annotations }) => {
       const ids = bridge.add(annotations);
-      report("add_annotations", `Đã thêm ${ids.length} chú thích`, true);
+      report("add_annotations", t("ai.added", { count: ids.length }), true);
       return JSON.stringify({ added: ids.map((id, i) => ({ id, type: annotations[i].type })) });
     },
   });
@@ -79,7 +80,7 @@ export function buildTools(bridge: EditorBridge, report: ToolReport) {
     eager_input_streaming: true,
     run: async ({ ids }) => {
       const removed = bridge.remove(ids);
-      report("remove_annotations", `Đã xoá ${removed} chú thích`, true);
+      report("remove_annotations", t("ai.removed", { count: removed }), true);
       return JSON.stringify({ removed });
     },
   });

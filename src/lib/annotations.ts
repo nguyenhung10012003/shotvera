@@ -210,16 +210,17 @@ export function contrastText(hex: string): string {
   return luminance > 0.6 ? "#111111" : "#FFFFFF";
 }
 
-export const TOOL_LABELS: Record<ToolId, { label: string; key: string }> = {
-  select: { label: "Chọn / di chuyển", key: "V" },
-  rect: { label: "Hình chữ nhật", key: "R" },
-  ellipse: { label: "Hình elip", key: "O" },
-  line: { label: "Đường thẳng", key: "L" },
-  arrow: { label: "Mũi tên", key: "A" },
-  pen: { label: "Bút vẽ", key: "P" },
-  marker: { label: "Bút dạ quang", key: "H" },
-  text: { label: "Văn bản", key: "T" },
-  mosaic: { label: "Làm mờ (mosaic)", key: "M" },
-  step: { label: "Đánh số bước", key: "N" },
-  emoji: { label: "Emoji", key: "E" },
+/** Keyboard shortcut of each tool (the label is the i18n key `tool.<id>`). */
+export const TOOL_SHORTCUTS: Record<ToolId, string> = {
+  select: "V",
+  rect: "R",
+  ellipse: "O",
+  line: "L",
+  arrow: "A",
+  pen: "P",
+  marker: "H",
+  text: "T",
+  mosaic: "M",
+  step: "N",
+  emoji: "E",
 };

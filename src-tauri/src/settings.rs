@@ -13,6 +13,11 @@ fn get<T: DeserializeOwned>(app: &AppHandle, key: &str) -> Option<T> {
     store.get(key).and_then(|v| serde_json::from_value(v).ok())
 }
 
+/// UI language code ("en" or "vi"); English unless the user picked another one.
+pub fn language(app: &AppHandle) -> String {
+    get::<String>(app, "language").unwrap_or_else(|| "en".to_string())
+}
+
 pub fn capture_shortcut(app: &AppHandle) -> String {
     get::<String>(app, "captureShortcut").unwrap_or_else(|| DEFAULT_SHORTCUT.to_string())
 }

@@ -1,6 +1,7 @@
 import { StrictMode, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
-import { currentRoute } from "./lib/platform";
+import { DEFAULT_LOCALE, isLocale, setLocale } from "./i18n";
+import { currentRoute, loadSettings, onLanguageChange } from "./lib/platform";
 import "./styles.css";
 
 const OverlayApp = lazy(() => import("./overlay/OverlayApp").then((m) => ({ default: m.OverlayApp })));
@@ -25,10 +26,23 @@ function Root() {
 
 window.addEventListener("hashchange", () => window.location.reload());
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <Suspense fallback={null}>
-      <Root />
-    </Suspense>
-  </StrictMode>,
-);
+/** Applies the saved UI language before the first render and follows later changes. */
+async function initLanguage(): Promise<void> {
+  const language = await loadSettings()
+    .then((s) => s.language)
+    .catch(() => DEFAULT_LOCALE);
+  setLocale(isLocale(language) ? language : DEFAULT_LOCALE);
+  void onLanguageChange((l) => {
+    if (isLocale(l)) setLocale(l);
+  });
+}
+
+void initLanguage().finally(() => {
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <Suspense fallback={null}>
+        <Root />
+      </Suspense>
+    </StrictMode>,
+  );
+});

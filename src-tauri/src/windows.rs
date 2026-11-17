@@ -119,6 +119,13 @@ pub fn hide_home(app: &AppHandle) -> bool {
     }
 }
 
+/// Re-applies the UI language to native window titles.
+pub fn apply_language(app: &AppHandle, lang: crate::i18n::Lang) {
+    if let Some(w) = app.get_webview_window(SETTINGS) {
+        let _ = w.set_title(crate::i18n::Text::SettingsTitle.get(lang));
+    }
+}
+
 pub fn show_settings(app: &AppHandle) {
     hide_home(app);
     if let Some(w) = app.get_webview_window(SETTINGS) {
@@ -128,7 +135,7 @@ pub fn show_settings(app: &AppHandle) {
     }
     let builder =
         WebviewWindowBuilder::new(app, SETTINGS, WebviewUrl::App("index.html#settings".into()))
-            .title("Cài đặt Shotvera")
+            .title(crate::i18n::tr(app, crate::i18n::Text::SettingsTitle))
             .inner_size(620.0, 560.0)
             .resizable(false)
             .center()

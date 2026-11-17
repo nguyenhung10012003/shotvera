@@ -1,7 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Info, Keyboard, Settings as Cog, Sparkles } from "lucide-react";
+import { LOCALES, setLocale, useT, type Locale, type MessageKey } from "../i18n";
 import {
+  appVersion,
   applyCaptureShortcut,
+  applyLanguage,
   getApiKey,
   isTauri,
   loadSettings,
@@ -14,8 +17,10 @@ import { AI_MODELS, DEFAULT_SETTINGS, type Settings } from "../lib/settings";
 type Tab = "general" | "shortcuts" | "ai" | "about";
 
 const IS_MAC = navigator.platform.toLowerCase().includes("mac");
+const MOD = IS_MAC ? "⌘" : "Ctrl+";
 
 export function SettingsApp() {
+  const t = useT();
   const [tab, setTab] = useState<Tab>("general");
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
 
@@ -28,20 +33,20 @@ export function SettingsApp() {
     await saveSettings(patch);
   };
 
-  const tabs: { id: Tab; label: string; icon: ReactNode }[] = [
-    { id: "general", label: "Chung", icon: <Cog size={16} /> },
-    { id: "shortcuts", label: "Phím tắt", icon: <Keyboard size={16} /> },
-    { id: "ai", label: "AI", icon: <Sparkles size={16} /> },
-    { id: "about", label: "Giới thiệu", icon: <Info size={16} /> },
+  const tabs: { id: Tab; label: MessageKey; icon: ReactNode }[] = [
+    { id: "general", label: "settings.tab.general", icon: <Cog size={16} /> },
+    { id: "shortcuts", label: "settings.tab.shortcuts", icon: <Keyboard size={16} /> },
+    { id: "ai", label: "settings.tab.ai", icon: <Sparkles size={16} /> },
+    { id: "about", label: "settings.tab.about", icon: <Info size={16} /> },
   ];
 
   return (
     <div className="settings">
       <nav className="settings-tabs" data-tauri-drag-region>
-        {tabs.map((t) => (
-          <button key={t.id} className={tab === t.id ? "on" : ""} onClick={() => setTab(t.id)}>
-            {t.icon}
-            {t.label}
+        {tabs.map((item) => (
+          <button key={item.id} className={tab === item.id ? "on" : ""} onClick={() => setTab(item.id)}>
+            {item.icon}
+            {t(item.label)}
           </button>
         ))}
       </nav>
@@ -77,6 +82,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange(v: boolean): void }) {
 }
 
 function General({ settings, update }: SectionProps) {
+  const t = useT();
   const [dir, setDir] = useState("");
   const [autostart, setAutostart] = useState(settings.launchAtLogin);
 
@@ -106,18 +112,33 @@ function General({ settings, update }: SectionProps) {
     await update({ launchAtLogin: on });
   };
 
+  const setLanguage = async (language: Locale) => {
+    setLocale(language);
+    await update({ language });
+    await applyLanguage(language);
+  };
+
   return (
     <>
-      <h2>Chung</h2>
-      <Row label="Thư mục lưu ảnh" hint="Dùng cho Lưu nhanh (⌘S)">
+      <h2>{t("settings.tab.general")}</h2>
+      <Row label={t("settings.language")}>
+        <select value={settings.language} onChange={(e) => void setLanguage(e.target.value as Locale)}>
+          {LOCALES.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.label}
+            </option>
+          ))}
+        </select>
+      </Row>
+      <Row label={t("settings.saveFolder")} hint={t("settings.saveFolderHint", { shortcut: `${MOD}S` })}>
         <div className="path">
           <code title={dir}>{dir}</code>
           <button className="btn" onClick={() => void pickDir()}>
-            Đổi…
+            {t("settings.change")}
           </button>
         </div>
       </Row>
-      <Row label="Định dạng lưu nhanh">
+      <Row label={t("settings.saveFormat")}>
         <div className="seg">
           {(["png", "jpg"] as const).map((f) => (
             <button key={f} className={settings.saveFormat === f ? "on" : ""} onClick={() => void update({ saveFormat: f })}>
@@ -126,10 +147,10 @@ function General({ settings, update }: SectionProps) {
           ))}
         </div>
       </Row>
-      <Row label="Đóng sau khi sao chép" hint="Nút ✓ / ⌘C sẽ đóng màn hình chụp">
+      <Row label={t("settings.closeAfterCopy")} hint={t("settings.closeAfterCopyHint", { shortcut: `${MOD}C` })}>
         <Toggle on={settings.closeAfterCopy} onChange={(v) => void update({ closeAfterCopy: v })} />
       </Row>
-      <Row label="Mở cùng hệ thống" hint="Chạy Shotvera khi đăng nhập máy tính">
+      <Row label={t("settings.launchAtLogin")} hint={t("settings.launchAtLoginHint")}>
         <Toggle on={autostart} onChange={(v) => void setLogin(v)} />
       </Row>
     </>
@@ -162,6 +183,7 @@ export function prettyShortcut(acc: string): string {
 }
 
 function Shortcuts({ settings, update }: SectionProps) {
+  const t = useT();
   const [recording, setRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -181,43 +203,44 @@ function Shortcuts({ settings, update }: SectionProps) {
         await update({ captureShortcut: acc });
         setError(null);
       } catch (err) {
-        setError(`Không đặt được phím tắt: ${String(err)}`);
+        setError(t("settings.shortcutError", { error: String(err) }));
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [recording, update]);
+  }, [recording, update, t]);
 
-  const list: [string, string][] = [
-    ["Sao chép & đóng", IS_MAC ? "⌘C · ⌘↵ · nhấp đúp" : "Ctrl+C · Ctrl+Enter · nhấp đúp"],
-    ["Lưu nhanh / Lưu thành…", IS_MAC ? "⌘S / ⇧⌘S" : "Ctrl+S / Ctrl+Shift+S"],
-    ["Hoàn tác / Làm lại", IS_MAC ? "⌘Z / ⇧⌘Z" : "Ctrl+Z / Ctrl+Y"],
-    ["Ghim lên màn hình", "F3"],
-    ["Mở AI", "I"],
-    ["Công cụ", "V R O L A P H T M N E"],
-    ["Di chuyển vùng chọn 1px / 10px", "← ↑ → ↓ / ⇧ + mũi tên"],
-    ["Sao chép mã màu (khi đang chọn vùng)", "C"],
-    ["Thoát", "Esc · chuột phải"],
+  const doubleClick = t("settings.keys.doubleClick");
+  const list: [MessageKey, string][] = [
+    ["settings.keys.copyClose", IS_MAC ? `⌘C · ⌘↵ · ${doubleClick}` : `Ctrl+C · Ctrl+Enter · ${doubleClick}`],
+    ["settings.keys.save", IS_MAC ? "⌘S / ⇧⌘S" : "Ctrl+S / Ctrl+Shift+S"],
+    ["settings.keys.undoRedo", IS_MAC ? "⌘Z / ⇧⌘Z" : "Ctrl+Z / Ctrl+Y"],
+    ["settings.keys.pin", "F3"],
+    ["settings.keys.ai", "I"],
+    ["settings.keys.tools", "V R O L A P H T M N E"],
+    ["settings.keys.nudge", `← ↑ → ↓ / ${IS_MAC ? "⇧" : "Shift"} + ${t("settings.keys.arrows")}`],
+    ["settings.keys.copyColor", "C"],
+    ["settings.keys.exit", `Esc · ${t("settings.keys.rightClick")}`],
   ];
 
   return (
     <>
-      <h2>Phím tắt</h2>
-      <Row label="Chụp màn hình" hint="Phím tắt toàn hệ thống">
+      <h2>{t("settings.tab.shortcuts")}</h2>
+      <Row label={t("settings.captureShortcut")} hint={t("settings.captureShortcutHint")}>
         <button className={`shortcut${recording ? " rec" : ""}`} onClick={() => setRecording(true)}>
-          {recording ? "Nhấn tổ hợp phím…" : prettyShortcut(settings.captureShortcut)}
+          {recording ? t("settings.pressKeys") : prettyShortcut(settings.captureShortcut)}
         </button>
       </Row>
       {error && <p className="error">{error}</p>}
-      <p className="hint">Nếu phím tắt không hoạt động, có thể nó đang trùng với ứng dụng khác. Hãy chọn tổ hợp khác.</p>
-      <h3>Trong màn hình chụp</h3>
+      <p className="hint">{t("settings.shortcutHint")}</p>
+      <h3>{t("settings.inCapture")}</h3>
       <table className="keys">
         <tbody>
-          {list.map(([a, b]) => (
-            <tr key={a}>
-              <td>{a}</td>
+          {list.map(([label, keys]) => (
+            <tr key={label}>
+              <td>{t(label)}</td>
               <td>
-                <kbd>{b}</kbd>
+                <kbd>{keys}</kbd>
               </td>
             </tr>
           ))}
@@ -228,6 +251,7 @@ function Shortcuts({ settings, update }: SectionProps) {
 }
 
 function AiSettings({ settings, update }: SectionProps) {
+  const t = useT();
   const [hasKey, setHasKey] = useState(false);
   const [editing, setEditing] = useState(false);
   const [key, setKey] = useState("");
@@ -243,22 +267,28 @@ function AiSettings({ settings, update }: SectionProps) {
     setEditing(false);
   };
 
+  const efforts: [Settings["aiEffort"], MessageKey][] = [
+    ["low", "settings.effort.low"],
+    ["medium", "settings.effort.medium"],
+    ["high", "settings.effort.high"],
+  ];
+
   return (
     <>
-      <h2>AI</h2>
-      <Row label="Anthropic API key" hint="Lưu an toàn trong kho khoá của hệ điều hành">
+      <h2>{t("settings.tab.ai")}</h2>
+      <Row label={t("settings.apiKey")} hint={t("settings.apiKeyHint")}>
         {editing ? (
           <div className="path">
             <input type="password" placeholder="sk-ant-…" value={key} autoFocus onChange={(e) => setKey(e.target.value)} />
             <button className="btn primary" onClick={() => void saveKey()}>
-              Lưu
+              {t("common.save")}
             </button>
           </div>
         ) : (
           <div className="path">
-            <span className={hasKey ? "ok" : "muted"}>{hasKey ? "Đã thiết lập" : "Chưa có"}</span>
+            <span className={hasKey ? "ok" : "muted"}>{t(hasKey ? "settings.keySet" : "settings.keyMissing")}</span>
             <button className="btn" onClick={() => setEditing(true)}>
-              {hasKey ? "Thay đổi" : "Thêm"}
+              {t(hasKey ? "settings.keyChange" : "settings.keyAdd")}
             </button>
             {hasKey && (
               <button
@@ -267,50 +297,49 @@ function AiSettings({ settings, update }: SectionProps) {
                   void setApiKey(null).then(() => setHasKey(false));
                 }}
               >
-                Xoá
+                {t("settings.keyRemove")}
               </button>
             )}
           </div>
         )}
       </Row>
-      <Row label="Mô hình">
+      <Row label={t("settings.model")}>
         <select value={settings.aiModel} onChange={(e) => void update({ aiModel: e.target.value as Settings["aiModel"] })}>
           {AI_MODELS.map((m) => (
             <option key={m.id} value={m.id}>
-              {m.label} — {m.hint}
+              {m.label} — {t(m.hint)}
             </option>
           ))}
         </select>
       </Row>
-      <Row label="Mức suy luận" hint="Cao hơn: kỹ hơn nhưng chậm và tốn hơn">
+      <Row label={t("settings.effort")} hint={t("settings.effortHint")}>
         <div className="seg">
-          {(
-            [
-              ["low", "Nhanh"],
-              ["medium", "Cân bằng"],
-              ["high", "Kỹ"],
-            ] as const
-          ).map(([v, label]) => (
-            <button key={v} className={settings.aiEffort === v ? "on" : ""} onClick={() => void update({ aiEffort: v })}>
-              {label}
+          {efforts.map(([value, label]) => (
+            <button key={value} className={settings.aiEffort === value ? "on" : ""} onClick={() => void update({ aiEffort: value })}>
+              {t(label)}
             </button>
           ))}
         </div>
       </Row>
-      <p className="hint">
-        Ảnh chụp chỉ được gửi tới Anthropic khi bạn mở khung AI và gửi câu hỏi. Shotvera không lưu ảnh hay hội thoại trên máy chủ nào khác.
-      </p>
+      <p className="hint">{t("settings.aiPrivacy")}</p>
     </>
   );
 }
 
 function About() {
+  const t = useT();
+  const [version, setVersion] = useState("");
+
+  useEffect(() => {
+    void appVersion().then(setVersion);
+  }, []);
+
   return (
     <div className="about">
       <div className="about-logo">S</div>
       <h2>Shotvera</h2>
-      <p>Phiên bản 0.1.0</p>
-      <p className="hint">Chụp màn hình, chú thích và chỉnh sửa bằng AI trên macOS, Windows và Linux.</p>
+      <p>{version ? t("settings.version", { version }) : " "}</p>
+      <p className="hint">{t("settings.tagline")}</p>
     </div>
   );
 }

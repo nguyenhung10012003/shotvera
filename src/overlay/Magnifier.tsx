@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
+import { useT } from "../i18n";
 import { useOverlay } from "./store";
 
 const SIZE = 132; // CSS px
@@ -15,6 +16,7 @@ export function Magnifier() {
   const frame = useOverlay((s) => s.frame)!;
   const cursor = useOverlay((s) => s.cursor);
   const canvas = useRef<HTMLCanvasElement>(null);
+  const t = useT();
 
   const px = cursor ? Math.min(frame.width - 1, Math.max(0, Math.floor(cursor.x * frame.scale))) : 0;
   const py = cursor ? Math.min(frame.height - 1, Math.max(0, Math.floor(cursor.y * frame.scale))) : 0;
@@ -76,7 +78,7 @@ export function Magnifier() {
             {color}
           </span>
         </div>
-        <div className="magnifier-hint">C: sao chép màu · Esc: thoát</div>
+        <div className="magnifier-hint">{t("overlay.magnifierHint")}</div>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Check, CircleStop, KeyRound, Sparkles, X } from "lucide-react";
+import { useT } from "../i18n";
 import { placeBeside } from "../lib/geometry";
 import { getApiKey, isTauri, setApiKey } from "../lib/platform";
 import { useOverlay } from "../overlay/store";
@@ -19,6 +20,7 @@ export function AiPanel() {
   const [input, setInput] = useState("");
   const list = useRef<HTMLDivElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
+  const t = useT();
 
   useEffect(() => {
     void getApiKey().then((k) => setHasKey(!!k));
@@ -70,7 +72,7 @@ export function AiPanel() {
         </span>
         <b>Shotvera AI</b>
         <span className="ai-sub">Claude</span>
-        <button className="icon-btn" onClick={() => useOverlay.getState().setAiOpen(false)} aria-label="Đóng">
+        <button className="icon-btn" onClick={() => useOverlay.getState().setAiOpen(false)} aria-label={t("common.close")}>
           <X size={16} />
         </button>
       </header>
@@ -87,11 +89,11 @@ export function AiPanel() {
           <div className="ai-list" ref={list}>
             {messages.length === 0 && (
               <div className="ai-empty">
-                <p>Hỏi bất cứ điều gì về ảnh vừa chụp, hoặc nhờ AI chỉnh sửa trực tiếp lên ảnh.</p>
+                <p>{t("ai.intro")}</p>
                 <div className="chips">
-                  {QUICK_ACTIONS.map((q) => (
-                    <button key={q.id} className="chip" onClick={() => void useAiSession.getState().sendQuick(q.id)}>
-                      {q.label}
+                  {QUICK_ACTIONS.map((id) => (
+                    <button key={id} className="chip" onClick={() => void useAiSession.getState().sendQuick(id)}>
+                      {t(`quick.${id}`)}
                     </button>
                   ))}
                 </div>
@@ -109,7 +111,7 @@ export function AiPanel() {
                       ) : (
                         <div key={i} className={`tool-chip ${p.status}`}>
                           {p.status === "running" ? <span className="spinner" /> : p.status === "done" ? <Check size={13} /> : <X size={13} />}
-                          {p.summary ?? (p.status === "error" ? "Thao tác không hoàn tất" : p.name === "add_annotations" ? "Đang vẽ chú thích…" : "Đang xoá chú thích…")}
+                          {p.summary ?? t(p.status === "error" ? "ai.toolFailed" : p.name === "add_annotations" ? "ai.drawing" : "ai.removing")}
                         </div>
                       ),
                     )}
@@ -128,9 +130,9 @@ export function AiPanel() {
           </div>
           {messages.length > 0 && status === "idle" && (
             <div className="chips compact">
-              {QUICK_ACTIONS.slice(0, 4).map((q) => (
-                <button key={q.id} className="chip" onClick={() => void useAiSession.getState().sendQuick(q.id)}>
-                  {q.label}
+              {QUICK_ACTIONS.slice(0, 4).map((id) => (
+                <button key={id} className="chip" onClick={() => void useAiSession.getState().sendQuick(id)}>
+                  {t(`quick.${id}`)}
                 </button>
               ))}
             </div>
@@ -140,7 +142,7 @@ export function AiPanel() {
               ref={textarea}
               value={input}
               rows={1}
-              placeholder="VD: khoanh đỏ nút Đăng ký, che email…"
+              placeholder={t("ai.placeholder")}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
                 e.stopPropagation();
@@ -153,11 +155,11 @@ export function AiPanel() {
               }}
             />
             {status === "streaming" ? (
-              <button className="send stop" onClick={() => useAiSession.getState().stop()} aria-label="Dừng">
+              <button className="send stop" onClick={() => useAiSession.getState().stop()} aria-label={t("ai.stop")}>
                 <CircleStop size={16} />
               </button>
             ) : (
-              <button className="send" disabled={!input.trim()} onClick={submit} aria-label="Gửi">
+              <button className="send" disabled={!input.trim()} onClick={submit} aria-label={t("ai.send")}>
                 <ArrowUp size={16} />
               </button>
             )}
@@ -172,6 +174,7 @@ function KeySetup({ onSaved }: { onSaved(): void }) {
   const [key, setKey] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
 
   const save = async () => {
     const value = key.trim();
@@ -201,10 +204,8 @@ function KeySetup({ onSaved }: { onSaved(): void }) {
   return (
     <div className="key-setup">
       <KeyRound size={26} />
-      <h3>Kết nối Claude</h3>
-      <p>
-        Dán Anthropic API key để dùng AI. Key được lưu trong {isTauri ? "Keychain / Credential Manager của hệ điều hành" : "trình duyệt (chế độ dev)"} và chỉ gửi tới Anthropic.
-      </p>
+      <h3>{t("ai.connectTitle")}</h3>
+      <p>{t("ai.connectBody", { store: t(isTauri ? "ai.storeOs" : "ai.storeBrowser") })}</p>
       <input
         type="password"
         placeholder="sk-ant-…"
@@ -218,10 +219,10 @@ function KeySetup({ onSaved }: { onSaved(): void }) {
       />
       {error && <div className="ai-error">{error}</div>}
       <button className="btn primary" disabled={!key.trim() || saving} onClick={() => void save()}>
-        {saving ? "Đang lưu…" : "Lưu API key"}
+        {t(saving ? "ai.saving" : "ai.saveKey")}
       </button>
       <button className="btn link" onClick={() => void openConsole()}>
-        Lấy API key tại console.anthropic.com
+        {t("ai.getKey")}
       </button>
     </div>
   );

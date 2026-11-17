@@ -10,7 +10,8 @@ import type { Rect } from "../lib/geometry";
 import { getApiKey, loadSettings } from "../lib/platform";
 import { exportComposite, toPngBase64 } from "../overlay/exportImage";
 import { useOverlay } from "../overlay/store";
-import { QUICK_ACTIONS, SYSTEM_PROMPT, type QuickId } from "./prompts";
+import { t } from "../i18n";
+import { systemPrompt, type QuickId } from "./prompts";
 import { buildTools, type AnnotationSpec, type EditorBridge } from "./tools";
 
 type MessageParam = Anthropic.Beta.Messages.BetaMessageParam;
@@ -135,13 +136,13 @@ function annotationContext(snap: Snapshot): string {
 }
 
 function describeError(err: unknown): string {
-  if (err instanceof Anthropic.APIUserAbortError) return "Đã dừng.";
-  if (err instanceof Anthropic.AuthenticationError) return "API key không hợp lệ. Hãy kiểm tra lại trong phần cài đặt AI.";
-  if (err instanceof Anthropic.PermissionDeniedError) return "API key không có quyền dùng mô hình này.";
-  if (err instanceof Anthropic.RateLimitError) return "Đang bị giới hạn tốc độ. Thử lại sau ít phút.";
-  if (err instanceof Anthropic.BadRequestError) return `Yêu cầu không hợp lệ: ${err.message}`;
-  if (err instanceof Anthropic.APIConnectionError) return "Không kết nối được tới Anthropic API. Kiểm tra mạng.";
-  if (err instanceof Anthropic.APIError) return `Lỗi API (${err.status ?? "?"}): ${err.message}`;
+  if (err instanceof Anthropic.APIUserAbortError) return t("ai.err.stopped");
+  if (err instanceof Anthropic.AuthenticationError) return t("ai.err.auth");
+  if (err instanceof Anthropic.PermissionDeniedError) return t("ai.err.permission");
+  if (err instanceof Anthropic.RateLimitError) return t("ai.err.rateLimit");
+  if (err instanceof Anthropic.BadRequestError) return t("ai.err.badRequest", { message: err.message });
+  if (err instanceof Anthropic.APIConnectionError) return t("ai.err.connection");
+  if (err instanceof Anthropic.APIError) return t("ai.err.api", { status: err.status ?? "?", message: err.message });
   return err instanceof Error ? err.message : String(err);
 }
 
@@ -174,8 +175,7 @@ export const useAiSession = create<AiState>((set, get) => {
     },
 
     async sendQuick(id) {
-      const action = QUICK_ACTIONS.find((q) => q.id === id);
-      if (action) await get().send(action.prompt);
+      await get().send(t(`prompt.${id}`));
     },
 
     async send(text) {
@@ -232,7 +232,7 @@ export const useAiSession = create<AiState>((set, get) => {
         {
           model,
           max_tokens: 16000,
-          system: SYSTEM_PROMPT,
+          system: systemPrompt(),
           tools: buildTools(makeBridge(snapshot), report),
           messages: [...history, userMessage],
           output_config: { effort: settings.aiEffort },
@@ -259,11 +259,11 @@ export const useAiSession = create<AiState>((set, get) => {
           const message = await stream.finalMessage();
           last = message;
           if (message.stop_reason === "refusal") {
-            patchLast((m) => ({ ...m, error: "Claude đã từ chối yêu cầu này." }));
+            patchLast((m) => ({ ...m, error: t("ai.err.refusal") }));
             break;
           }
           if (message.stop_reason === "max_tokens" && message.content.some((b) => b.type === "tool_use")) {
-            patchLast((m) => ({ ...m, error: "Phản hồi bị cắt ngắn trước khi hoàn tất thao tác. Hãy thử lại." }));
+            patchLast((m) => ({ ...m, error: t("ai.err.truncated") }));
             break;
           }
           completed = message.stop_reason === "end_turn" || message.stop_reason === "stop_sequence" || message.stop_reason === "max_tokens";

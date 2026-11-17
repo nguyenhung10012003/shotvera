@@ -1,6 +1,7 @@
 import type Konva from "konva";
 import { createRoot } from "react-dom/client";
 import { Layer, Stage } from "react-konva";
+import { t } from "../i18n";
 import type { Annotation } from "../lib/annotations";
 import { AnnotationView } from "./EditorStage";
 
@@ -44,7 +45,7 @@ export async function renderAnnotations(
       if (s && (s.getLayers()[0]?.getChildren().length ?? -1) === list.length) break;
     }
     const s = stage as Konva.Stage | null;
-    if (!s) throw new Error("Không dựng được lớp chú thích để xuất ảnh");
+    if (!s) throw new Error(t("overlay.exportFailed"));
     return s.toCanvas({ pixelRatio });
   } finally {
     root.unmount();

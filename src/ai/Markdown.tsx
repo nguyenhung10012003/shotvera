@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Check, Copy } from "lucide-react";
+import { useT } from "../i18n";
 
 /**
  * Minimal Markdown renderer for chat replies: fenced code, headings, lists, bold, italic, inline code.
@@ -72,6 +73,7 @@ function inline(text: string): ReactNode[] {
 
 function CodeBlock({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
+  const t = useT();
   return (
     <div className="md-code">
       <button
@@ -84,7 +86,7 @@ function CodeBlock({ code }: { code: string }) {
         }}
       >
         {copied ? <Check size={13} /> : <Copy size={13} />}
-        {copied ? "Đã chép" : "Chép"}
+        {t(copied ? "common.copied" : "common.copy")}
       </button>
       <pre>{code}</pre>
     </div>

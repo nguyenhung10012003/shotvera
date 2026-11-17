@@ -4,6 +4,7 @@
  */
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
+import type { Locale } from "../i18n";
 import { DEFAULT_SETTINGS, type Settings } from "./settings";
 import { renderMockDesktop } from "./mockScreen";
 import type { MonitorLayout } from "../overlay/space";
@@ -376,6 +377,26 @@ export async function saveSettings(patch: Partial<Settings>): Promise<void> {
   const s = await store();
   for (const [k, v] of Object.entries(patch)) await s.set(k, v);
   await s.save();
+}
+
+/**
+ * Switches the UI language: Rust rebuilds the tray menu and tells every window (overlays, popover,
+ * pins, settings) to re-render. In the browser mock, other tabs pick it up from the storage event.
+ */
+export async function applyLanguage(language: Locale): Promise<void> {
+  if (isTauri) await invoke("set_language", { language });
+}
+
+/** Calls `cb` when the UI language is changed from any window. */
+export async function onLanguageChange(cb: (language: string) => void): Promise<UnlistenFn> {
+  if (isTauri) return listen<string>("app://language", (e) => cb(e.payload));
+  const onStorage = (e: StorageEvent) => {
+    if (e.key !== MOCK_SETTINGS_KEY || !e.newValue) return;
+    const language = (JSON.parse(e.newValue) as Partial<Settings>).language;
+    if (language) cb(language);
+  };
+  window.addEventListener("storage", onStorage);
+  return () => window.removeEventListener("storage", onStorage);
 }
 
 /** Registers the global capture shortcut; rejects with a readable message if it is invalid or taken. */

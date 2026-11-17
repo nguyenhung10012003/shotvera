@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { Copy, Download, X } from "lucide-react";
+import { useT } from "../i18n";
 import { copyImage, loadPin, saveAs, type PinMeta } from "../lib/platform";
 
 /** Always-on-top window showing a pinned screenshot. Drag to move, scroll to zoom, double-click to close. */
@@ -9,6 +10,7 @@ export function PinApp({ id }: { id: string }) {
   const [zoom, setZoom] = useState(1);
   const [flash, setFlash] = useState<string | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
+  const t = useT();
 
   useEffect(() => {
     void loadPin(id).then(setPin);
@@ -43,7 +45,7 @@ export function PinApp({ id }: { id: string }) {
   const doCopy = async () => {
     if (!pin) return;
     await copyImage(pin.image);
-    notify("Đã sao chép");
+    notify(t("common.copied"));
   };
   const doSave = async () => {
     if (!pin) return;
@@ -51,7 +53,7 @@ export function PinApp({ id }: { id: string }) {
     await win.setAlwaysOnTop(false);
     try {
       const path = await saveAs(pin.image);
-      if (path) notify("Đã lưu");
+      if (path) notify(t("common.saved"));
     } finally {
       await win.setAlwaysOnTop(true);
     }
@@ -70,16 +72,16 @@ export function PinApp({ id }: { id: string }) {
     >
       <canvas ref={canvas} className="pin-canvas" />
       <div className="pin-bar">
-        <button onClick={() => void doCopy()} data-tip="Sao chép">
+        <button onClick={() => void doCopy()} data-tip={t("common.copy")}>
           <Copy size={14} />
         </button>
-        <button onClick={() => void doSave()} data-tip="Lưu">
+        <button onClick={() => void doSave()} data-tip={t("common.save")}>
           <Download size={14} />
         </button>
         <button onClick={() => setZoom(1)} className="pin-zoom">
           {Math.round(zoom * 100)}%
         </button>
-        <button onClick={() => void getCurrentWindow().close()} data-tip="Đóng (Esc)">
+        <button onClick={() => void getCurrentWindow().close()} data-tip={t("toolbar.close")}>
           <X size={14} />
         </button>
       </div>

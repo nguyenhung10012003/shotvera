@@ -7,12 +7,14 @@ import {
   type Handle,
   type Rect,
 } from "../lib/geometry";
+import { useT } from "../i18n";
 import { followGlobalPointer } from "../lib/platform";
 import { desktopBoundsLocal, intersect } from "./space";
 import { useOverlay } from "./store";
 
 /** Dim mask, selection frame, resize handles and the size/window label. */
 export function SelectionLayer() {
+  const t = useT();
   const frame = useOverlay((s) => s.frame)!;
   const phase = useOverlay((s) => s.phase);
   const selection = useOverlay((s) => s.selection);
@@ -28,7 +30,7 @@ export function SelectionLayer() {
   const pxW = rect ? Math.round(rect.w * frame.scale) : 0;
   const pxH = rect ? Math.round(rect.h * frame.scale) : 0;
   const hoverName =
-    isHover && hover ? (hover.app ? [hover.app, hover.title].filter(Boolean).join(" — ") : "Toàn màn hình") : "";
+    isHover && hover ? (hover.app ? [hover.app, hover.title].filter(Boolean).join(" — ") : t("overlay.fullScreen")) : "";
 
   const labelAbove = rect && rect.y > 30;
 
