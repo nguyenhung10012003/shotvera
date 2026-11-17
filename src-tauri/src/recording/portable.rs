@@ -13,12 +13,18 @@ use super::{Handle, Job, Outcome, RecordFormat};
 
 const STARTUP_TIMEOUT: Duration = Duration::from_secs(10);
 
-pub fn spawn(job: Job) -> Result<Handle, String> {
-    let monitor = xcap::Monitor::all()
+/// The xcap monitor with `id`. Looked up on the thread that uses it: on Windows a monitor wraps
+/// an `HMONITOR` handle and cannot be moved to another thread.
+fn find_monitor(id: u32) -> Result<xcap::Monitor, String> {
+    xcap::Monitor::all()
         .map_err(|e| e.to_string())?
         .into_iter()
-        .find(|m| m.id().ok() == Some(job.monitor_id))
-        .ok_or("the display to record is no longer connected")?;
+        .find(|m| m.id().ok() == Some(id))
+        .ok_or_else(|| "the display to record is no longer connected".to_string())
+}
+
+pub fn spawn(job: Job) -> Result<Handle, String> {
+    let monitor_id = job.monitor_id;
 
     // Bounded, so frames are dropped rather than piling up in memory when encoding falls behind.
     let (tx, rx) = sync_channel::<Msg>(3);
@@ -32,7 +38,9 @@ pub fn spawn(job: Job) -> Result<Handle, String> {
         thread::Builder::new()
             .name("shotvera-rec-capture".into())
             .spawn(move || {
-                let (recorder, frames) = match monitor.video_recorder() {
+                let (recorder, frames) = match find_monitor(monitor_id)
+                    .and_then(|m| m.video_recorder().map_err(|e| e.to_string()))
+                {
                     Ok(pair) => pair,
                     Err(err) => {
                         let _ = ready_tx.send(Err(err.to_string()));
