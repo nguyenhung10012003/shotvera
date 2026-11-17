@@ -31,7 +31,13 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --noEmit",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "build:mac": "tauri build --bundles app,dmg",
+    "build:mac:intel": "tauri build --target x86_64-apple-darwin --bundles app,dmg",
+    "build:mac:universal": "tauri build --target universal-apple-darwin --bundles app,dmg",
+    "build:win": "tauri build --bundles nsis,msi",
+    "build:linux": "tauri build --bundles appimage,deb,rpm",
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",

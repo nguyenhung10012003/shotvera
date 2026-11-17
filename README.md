@@ -142,7 +142,8 @@ src-tauri/               Rust (Tauri 2)
   src/platform.rs        OS-specific code: permissions, global pointer, overlay window level
   src/secrets.rs         API key in the OS credential store
 scripts/gen-icons.mjs    generates the app and tray icons
-re-analysis/             functional reference spec used while designing the UI
+scripts/release.mjs      bumps the version, tags and pushes a release
+.github/workflows/       release pipeline (GitHub Actions)
 ```
 
 **How a capture works**
@@ -152,6 +153,69 @@ re-analysis/             functional reference spec used while designing the UI
 3. The overlays share one document (selection, annotations, current tool) in desktop coordinates. That is what lets a selection span monitors.
 4. On export, the frontend merges the screen pixels and the annotation layer at native resolution.
 5. The frontend sends the result back to Rust as RGBA, and Rust copies or saves it.
+
+## Building installers
+
+Tauri builds installers for the platform you run it on. To get every platform at once, use the release pipeline described below.
+
+| Command | Output (in `src-tauri/target/**/release/bundle/`) |
+|---|---|
+| `npm run build:mac` | `.app` and `.dmg` for this Mac's architecture |
+| `npm run build:mac:intel` | `.app` and `.dmg` for Intel Macs |
+| `npm run build:mac:universal` | one `.dmg` that runs on Apple Silicon and Intel |
+| `npm run build:win` | `-setup.exe` (NSIS) and `.msi` installers |
+| `npm run build:linux` | `.AppImage`, `.deb` and `.rpm` |
+
+Some builds need extra Rust targets first:
+
+```bash
+rustup target add x86_64-apple-darwin                       # build:mac:intel
+rustup target add x86_64-apple-darwin aarch64-apple-darwin  # build:mac:universal
+```
+
+Builds are unsigned unless you configure signing:
+
+- macOS apps are ad-hoc signed, so users must confirm the first launch in System Settings → Privacy & Security.
+- On Windows, SmartScreen shows a warning until the installer is code-signed.
+
+## Releasing
+
+A tag push builds every platform on GitHub Actions and publishes the installers on the [Releases](https://github.com/nguyenhung10012003/shotvera/releases) page:
+
+```bash
+npm run release -- patch     # or minor, major, or an explicit version such as 1.0.0
+```
+
+The command:
+
+1. bumps the version in `package.json`, `package-lock.json` and `src-tauri/Cargo.toml`;
+2. commits the change and tags it `vX.Y.Z`;
+3. pushes the commit and the tag.
+
+The [release workflow](.github/workflows/release.yml) then takes over:
+
+1. It creates a draft release.
+2. It builds the following installers in parallel:
+   - macOS: Apple Silicon and Intel `.dmg`;
+   - Windows: `-setup.exe` and `.msi`;
+   - Linux: `.AppImage`, `.deb` and `.rpm`.
+3. It uploads the installers to the draft release.
+4. Once every build succeeds, it publishes the release.
+
+To rebuild an existing tag, run the workflow from the Actions tab.
+
+Pre-release versions must use numeric identifiers, such as `1.0.0-1`, because the Windows MSI format rejects `-beta`.
+
+**Signing on macOS (optional).** To sign and notarize the macOS builds, add these repository secrets:
+
+- `APPLE_CERTIFICATE`: a base64-encoded `.p12` Developer ID certificate;
+- `APPLE_CERTIFICATE_PASSWORD`;
+- `APPLE_SIGNING_IDENTITY`;
+- `APPLE_ID`;
+- `APPLE_PASSWORD`: an app-specific password;
+- `APPLE_TEAM_ID`.
+
+Without them, builds are ad-hoc signed.
 
 ## Roadmap
 
