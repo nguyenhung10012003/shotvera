@@ -1,7 +1,7 @@
 {
   "name": "shotvera",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Capture, annotate, and ask AI about anything on your screen. A cross-platform screenshot tool with a built-in Claude assistant.",
   "license": "Apache-2.0",
   "keywords": [
