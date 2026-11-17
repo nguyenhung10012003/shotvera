@@ -12,7 +12,11 @@
   <img alt="License: Apache 2.0" src="https://img.shields.io/badge/license-Apache%202.0-blue" />
   <img alt="Platforms" src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey" />
   <img alt="Built with Tauri 2" src="https://img.shields.io/badge/built%20with-Tauri%202-24C8DB" />
-  <img alt="Version" src="https://img.shields.io/badge/version-0.1.0-8b5cf6" />
+  <a href="https://github.com/nguyenhung10012003/shotvera/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/nguyenhung10012003/shotvera?color=8b5cf6&label=release" /></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/nguyenhung10012003/shotvera/releases/latest"><b>⬇ Download Shotvera</b></a>
 </p>
 
 Shotvera is a fast screenshot tool for macOS, Windows and Linux.
@@ -32,6 +36,24 @@ When a picture isn't enough, open the built-in AI assistant, powered by Claude. 
 Annotations the AI draws are ordinary shapes, so you can edit or undo them like your own.
 
 Shotvera is a small native app built with Tauri 2: a Rust core with a React interface. It has no account, no telemetry and no cloud storage. Your captures stay on your machine unless you ask the AI about them.
+
+## Download
+
+Get the installer for your system from the [latest release](https://github.com/nguyenhung10012003/shotvera/releases/latest):
+
+| System | File to download |
+|---|---|
+| macOS, Apple Silicon (M1 and later) | `Shotvera_<version>_aarch64.dmg` |
+| macOS, Intel | `Shotvera_<version>_x64.dmg` |
+| Windows 10 / 11 | `Shotvera_<version>_x64-setup.exe` (or the `.msi`) |
+| Linux | `.AppImage` (portable), `.deb` (Debian/Ubuntu) or `.rpm` (Fedora/openSUSE); requires glibc 2.39+ |
+
+Builds are not code-signed yet, so the first launch needs one extra step:
+
+- **macOS:** open Shotvera once. When macOS blocks it, go to System Settings → Privacy & Security and click **Open Anyway**.
+- **Windows:** if SmartScreen warns you, click **More info**, then **Run anyway**.
+
+The [release notes](https://github.com/nguyenhung10012003/shotvera/releases/latest) cover these steps in more detail.
 
 ## Features
 
